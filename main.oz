@@ -18,6 +18,11 @@ define
 		{Browser.browse Buf}
 	end
 
+	% === global var ===
+	InputText 
+	OutputText
+	% === === == === ===
+
 	% /!\ Fonction testee /!\
 	% @pre: les threads sont "ready"
 	% @post: Fonction appellee lorsqu on appuie sur le bouton de prediction
@@ -30,17 +35,17 @@ define
 	%														 | nil
 	%						<probability/frequence> := <int> | <float>
 
-	fun {Press InputText}
+	fun {Press}
 		local Out in
 			{InputText get(1: Out)}
 			{Browse {String.toAtom Out}}
-			% TODO
 		end
+		% TODO
 		0
 	end
 
-	proc {OnPress InputText ?R}
-		R = {Press InputText}
+	proc {OnPress ?R}
+		R = {Press}
 	end
 
 	% Lance les N threads de lecture et de parsing qui liront et traiteront tous les fichiers
@@ -88,7 +93,7 @@ define
 		% soumission !!!
 		% {ListAllFiles {OS.getDir TweetsFolder}}
 
-		local NbThreads InputText OutputText Description Window SeparatedWordsStream SeparatedWordsPort in
+		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
 				width: 1000
 				depth: 1000
@@ -115,7 +120,7 @@ define
 							text: "Predict"
 							width: 15
 							action: proc {$}
-								{OnPress InputText R}
+								{OnPress R}
 							end
 						)
 					)
@@ -146,7 +151,7 @@ define
 				{InputText bind(
 					event: "<Control-s>"
 					action: proc {$}
-						{OnPress InputText R}
+						{OnPress R}
 					end
 				)}
 
