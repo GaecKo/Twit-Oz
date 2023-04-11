@@ -10,7 +10,7 @@ else
 	OZENGINE = ozengine
 endif
 
-all : $(ENTRY_POINT)
+all: $(ENTRY_POINT)
 
 %.ozf: %.oz
 	$(OZC) -c $< -o "$@"
@@ -18,5 +18,5 @@ all : $(ENTRY_POINT)
 run: $(ENTRY_POINT) 
 	$(OZENGINE) $(ENTRY_POINT) --folder $(TWEETS_FOLDER)
 
-clean :
+clean:
 	rm -f *.ozf
