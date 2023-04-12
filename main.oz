@@ -39,7 +39,7 @@ define
 	fun {Press}
 		local Out in
 			{InputText get(1: Out)}
-			{Browse {String.toAtom Out}}
+			{OutputText set(1: {String.toAtom Out})}
 		end
 		% TODO
 		0
@@ -98,6 +98,8 @@ define
 		end
 	end
 
+	% Usefull function for later: {File GetS($)} -> gives the next line etc etc
+
 	proc {PrintFilesContent L}
 		case L 
 			of nil then skip
@@ -118,7 +120,7 @@ define
 		% N'appelez PAS cette fonction lors de la phase de
 		% soumission !!!
 
-		{PrintFilesContent Files} % Just prints all the content of files 
+		% {PrintFilesContent Files} % Just prints all the content of files 
 
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
@@ -133,32 +135,64 @@ define
 
 			local R in
 				Description=td(
+					
 					title: "Text predictor"
-					lr(
+					background: c(52 53 65)
+					
+					label(
+						text: "GPT-OZ 4"
+						foreground: white
+						glue: nswe
+						pady: 10
+						background: c(52 53 65)
+					)
+
+					td(
+						height: 300
+						width: 400
+						background: c(52 53 65)
+						padx: 50
+						pady:30
 						text(
-							handle: InputText
+							handle: OutputText
 							width: 50
 							height: 10
-							background: white
-							foreground: black
+							background: c(52 53 65)
+							highlightthickness:0
+							foreground: white
+							glue: nswe
 							wrap: word
+							borderwidth: 0
 						)
-						button(
-							text: "Predict"
-							width: 15
-							action: proc {$}
-								{OnPress R}
-							end
+
+						lr(
+							text(
+								glue: nswe
+								handle: InputText
+								width: 50
+								height: 5
+								background: c(64 65 79)
+								borderwidth: 2
+								foreground: white
+								wrap: word
+							)
+							
 						)
-					)
-					text(
-						handle: OutputText
-						width: 50
-						height: 10
-						background: black
-						foreground: white
-						glue: w
-						wrap: word
+						
+						lr(
+							glue:s
+							button(
+								text: "PREDICT"
+								relief: groove
+								foreground: c(52 53 65)
+								background: white 
+								width: 10
+								glue: s
+								action: proc {$}
+									{OnPress R}
+								end
+							)
+						)
 					)
 
 					% quit program when window is closed
