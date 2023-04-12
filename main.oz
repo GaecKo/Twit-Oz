@@ -21,6 +21,7 @@ define
 	% === global var ===
 	InputText 
 	OutputText
+	Files
 	% === === == === ===
 
 	% /!\ Fonction testee /!\
@@ -58,6 +59,7 @@ define
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
 
+
 	% Fetch Tweets Folder from CLI Arguments
 	% See the Makefile for an example of how it is called
 
@@ -74,16 +76,40 @@ define
 	end
 
 	% Decomnentez moi si besoin
-	%proc {ListAllFiles L}
-	%	case L of nil then skip
-	%	[] H|T then {Browse {String.toAtom H}} {ListAllFiles T}
-	%	end
-	%end
+	proc {ListAllFiles L}
+		case L of nil then skip
+		[] H|T then {Browse {String.toAtom H}} {ListAllFiles T}
+		end
+	end
+
+	fun {GetFileContent File} % File = 'tweets/...'
+		F = {New TextFile init(name:File flags:[read])}
+		L 
+	in 
+		{Browse File}
+		{F read(list:L size:all)}
+		L
+	end
+
+	fun {GetFiles L} % L = {OS.getDir TweetsFolder}
+		case L 
+			of nil then nil
+			[] H|T then {String.toAtom {Append "tweets/" H}}|{GetFiles T} % gives: 'tweets/fileX.txt'
+		end
+	end
+
+	proc {PrintFilesContent L}
+		case L 
+			of nil then skip
+			[] H|T then {Browse {GetFileContent H}} {PrintFilesContent T}
+		end
+	end
+		
 
 	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
-
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
+		Files = {GetFiles {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
 	in
 		% Fonction d'exemple qui liste tous les fichiers
 		% contenus dans le dossier passe en Argument.
@@ -91,7 +117,8 @@ define
 		% se trouvant dans le dossier
 		% N'appelez PAS cette fonction lors de la phase de
 		% soumission !!!
-		% {ListAllFiles {OS.getDir TweetsFolder}}
+
+		{PrintFilesContent Files} % Just prints all the content of files 
 
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
