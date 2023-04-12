@@ -136,26 +136,147 @@ define
 			local R in
 				Description=td(
 					
-					title: "Text predictor"
+					title: "GPT-OZ 4"
 					background: c(52 53 65)
-					
-					label(
-						text: "GPT-OZ 4"
-						foreground: white
-						glue: nswe
-						pady: 10
-						background: c(52 53 65)
-					)
 
 					td(
 						height: 300
 						width: 400
 						background: c(52 53 65)
 						padx: 50
-						pady:30
+						pady:30 
+						
+						label(
+							text: "GPT-OZ 4"
+							foreground: white
+							glue: nswe
+							pady: 10
+							background: c(52 53 65)
+						)
+
+						lr( % three columns 
+							width: 300
+							height: 100
+							background: c(52 53 65)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								label(
+									text: "Examples"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Tesla is ...\nshareholders'\nvictory."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe 
+								)
+
+								label(
+									text: "I am ...\nclose\npoverty."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe
+								)
+
+								label(
+									text: "I should...\nresell Twitter."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe
+								)
+							)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								label(
+									text: "Possibilities"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Get automatic\nTweets"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe 
+								)
+
+								label(
+									text: "2-grammes\nprediction\nbased"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Easy and\ncomplete\ntweets"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe
+								)
+							)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								label(
+									text: "Limitations"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Elon Musk\ntweetosphere"
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe 
+								)
+
+								label(
+									text: "Maximum \nresponse\nof 100 words"
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe
+								)
+
+								label(
+									text: "Oz slowness\n& bugs"
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe
+								)
+							)
+						)
+
 						text(
 							handle: OutputText
-							width: 50
+							width: 100
 							height: 10
 							background: c(52 53 65)
 							highlightthickness:0
@@ -165,41 +286,43 @@ define
 							borderwidth: 0
 						)
 
-						lr(
-							text(
-								glue: nswe
-								handle: InputText
-								width: 50
-								height: 5
-								background: c(64 65 79)
-								borderwidth: 2
-								foreground: white
-								wrap: word
-							)
-							
+						text(
+							glue: nswe
+							handle: InputText
+							width: 100
+							height: 5
+							background: c(64 65 79)
+							borderwidth: 2
+							foreground: white
+							wrap: word
 						)
 						
-						lr(
-							glue:s
-							button(
-								text: "PREDICT"
-								relief: groove
-								foreground: c(52 53 65)
-								background: white 
-								width: 10
-								glue: s
-								action: proc {$}
-									{OnPress R}
-								end
-							)
+						button(
+							text: "PREDICT"
+							relief: groove
+							foreground: c(52 53 65)
+							background: white 
+							width: 10
+							glue: s
+							action: proc {$}
+								{OnPress R}
+							end
 						)
+
+						label(
+							text: "@GPT-OZ 4 is under MIT license & still in development. \nNo warranty of work is given and it should be used at your own risk. "
+							foreground: white
+							glue: swe
+							pady: 20
+							background: c(52 53 65)
+						)						
 					)
 
-					% quit program when window is closed
+				% quit program when window is closed
 
-					action: proc {$}
-						{Application.exit 0}
-					end
+				action: proc {$}
+					{Application.exit 0}
+				end
 				)
 
 				% window creation
