@@ -106,7 +106,47 @@ define
 			[] H|T then {Browse {GetFileContent H}} {PrintFilesContent T}
 		end
 	end
-		
+	
+	% proc {FindinString SequenceString SentenceString ?L}
+	% 	%% Strings is a String: "word1 word2", 
+	% 	%% Sentence a List of String: "word1 word2 word3 word4"
+	% 	SentenceList = {String.tokens Sentence 32} % = Sentence.split(" ")
+	% 	SequenceList = {String.tokens Sequence 32}
+	% in
+	% 	L = {FindStringInSentence SentenceList SequenceList nil}
+	% end
+
+	fun {Strcmp S1 S2} 
+		%% return 1 if strings are equal 
+		case S1 
+			of nil then 
+				if S2 == nil 
+					then 1
+				else 
+					0
+				end
+			[] H|T then 
+				if {Char.toLower H} == {Char.toLower S2.1} then
+					{Strcmp T S2.2}
+				else 
+					0
+				end
+		end
+	end
+
+	fun {FindStringInSentence SequenceList SentenceList Acc} 
+		%% Strings is a list of String: [word1 word2], 
+		%% Sentence a List of String: [word1 word2 word3 word4], 
+		%% L the returned List containing the word that followed the sequence (here: [word3]) 
+		%% It will look for occurence of the String sequence and return a List containing all word that followed the Strings sequence
+		case SequenceList 
+			of nil then Acc
+			[] H|T then
+				if {Strcmp H SentenceList.1} == 1 then
+					Acc % still has to be done
+				end
+		end
+	end
 
 	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
 	proc {Main}
@@ -121,6 +161,12 @@ define
 		% soumission !!!
 
 		% {PrintFilesContent Files} % Just prints all the content of files 
+		local R in
+			% {FindStringInSentence "hello" "hello sir i am" R}
+			R = {Strcmp "hello" "Hello"}
+			{Browse R}
+
+		end
 
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
@@ -318,11 +364,11 @@ define
 						)						
 					)
 
-				% quit program when window is closed
+					% quit program when window is closed
 
-				action: proc {$}
-					{Application.exit 0}
-				end
+					action: proc {$}
+						{Application.exit 0}
+					end
 				)
 
 				% window creation
