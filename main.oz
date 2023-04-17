@@ -106,15 +106,6 @@ define
 			[] H|T then {Browse {GetFileContent H}} {PrintFilesContent T}
 		end
 	end
-	
-	% proc {FindinString SequenceString SentenceString ?L}
-	% 	%% Strings is a String: "word1 word2", 
-	% 	%% Sentence a List of String: "word1 word2 word3 word4"
-	% 	SentenceList = {String.tokens Sentence 32} % = Sentence.split(" ")
-	% 	SequenceList = {String.tokens Sequence 32}
-	% in
-	% 	L = {FindStringInSentence SentenceList SequenceList nil}
-	% end
 
 	fun {Strcmp S1 S2} 
 		%% return 1 if strings are equal 
@@ -126,7 +117,9 @@ define
 					0
 				end
 			[] H|T then 
-				if {Char.toLower H} == {Char.toLower S2.1} then
+				if S2 == nil then
+					0 
+				elseif {Char.toLower H} == {Char.toLower S2.1} then
 					{Strcmp T S2.2}
 				else 
 					0
@@ -134,18 +127,57 @@ define
 		end
 	end
 
-	fun {FindStringInSentence SequenceList SentenceList Acc} 
-		%% Strings is a list of String: [word1 word2], 
-		%% Sentence a List of String: [word1 word2 word3 word4], 
-		%% L the returned List containing the word that followed the sequence (here: [word3]) 
-		%% It will look for occurence of the String sequence and return a List containing all word that followed the Strings sequence
-		case SequenceList 
-			of nil then Acc
-			[] H|T then
-				if {Strcmp H SentenceList.1} == 1 then
-					Acc % still has to be done
+	fun {FindInSequence SequenceList SentenceList Acc Initial}
+		%% Check for Sequence within Sentence: 
+		%% [Hello I] [Sir Hello I am happy] -> [Hello I] [Hello I am happy] -> [I] [I am happy] -> [am] added 
+		SenLen = {List.length SentenceList}
+		SeqLen = {List.length SequenceList}
+	in
+		local Found Word in
+			if SenLen < (SeqLen + 1) then % if not possible because at end of sentence
+				Acc
+			else
+				if SeqLen == 1 then
+					if {Strcmp SequenceList.1 SentenceList.1} == 1 then
+						Word = SentenceList.2.1 % next word found ! 
+						Found = 1
+					else
+						Word = nil
+						Found = 0
+					end
+				else
+					Word = nil
+					Found = 0
 				end
+	
+				if SeqLen == 0 then
+					if Found == 1 then
+						{FindInSequence Initial SentenceList Word|Acc Initial} % restart search with initial sequence
+					else
+						{FindInSequence Initial SentenceList Acc Initial}
+					end
+	
+				elseif {Strcmp SequenceList.1 SentenceList.1} == 1 then
+					if Found == 1 then % add Word to list and continue checking for equivalence with further words in tail of sentence
+						{FindInSequence SequenceList.2 SentenceList.2 Word|Acc Initial}
+					else
+						{FindInSequence SequenceList.2 SentenceList.2 Acc Initial}
+					end
+	
+				else
+					{FindInSequence SequenceList SentenceList.2 Acc Initial} % if no correspondance, continue checking for occurence in tail of sentence, keeping the same sequence list
+				end
+			end
 		end
+	end
+
+	fun {FindinString SequenceString SentenceString}
+		%% Strings is a String: "word1 word2", 
+		%% Sentence a List of String: "word1 word2 word3 word4"
+		SentenceList = {String.tokens SentenceString 32} % = Sentence.split(" ")
+		SequenceList = {String.tokens SequenceString 32}
+	in
+		{FindInSequence SequenceList SentenceList nil SequenceList}
 	end
 
 	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
@@ -162,8 +194,9 @@ define
 
 		% {PrintFilesContent Files} % Just prints all the content of files 
 		local R in
-			% {FindStringInSentence "hello" "hello sir i am" R}
-			R = {Strcmp "hello" "Hello"}
+			% R = {FindinString "hello" "hello sir i am"}
+			R = {FindinString "I am" "Today I am with my best friend Roberto, I am glad :)))"} % -> [with glad]
+
 			{Browse R}
 
 		end
