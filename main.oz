@@ -82,11 +82,21 @@ define
 		end
 	end
 
+	fun {GetFileLines File Acc} % File = fd
+		%% return a list of the sentences within a file (without the \n): sentence_N | sentence_N-1 | ... | nil
+		Sentence = {File getS($) } 
+	in
+		if Sentence == false then
+			Acc
+		else 
+			{GetFileLines File Sentence|Acc}
+		end
+	end
+
 	fun {GetFileContent File} % File = 'tweets/...'
 		F = {New TextFile init(name:File flags:[read])}
 		L 
 	in 
-		{Browse File}
 		{F read(list:L size:all)}
 		L
 	end
@@ -193,13 +203,13 @@ define
 		% soumission !!!
 
 		% {PrintFilesContent Files} % Just prints all the content of files 
-		local R in
+		%local R in
 			% R = {FindinString "hello" "hello sir i am"}
-			R = {FindinString "I am" "Today I am with my best friend Roberto, I am glad :)))"} % -> [with glad]
+			% R = {FindinString "I am" "Today I am with my best friend Roberto, I am glad :)))"} % -> [with glad]
 
-			{Browse R}
-
-		end
+			% {Browse R}
+		% {TestFile}
+		%end
 
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
