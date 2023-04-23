@@ -59,6 +59,21 @@ define
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
 
+	fun {GetHistory}
+		F = {New TextFile init(name: 'history.txt' flags:[read])}
+	in
+		{History F nil}
+	end
+
+	fun {History F Acc} 
+		S = {F getS($)}
+	in
+		if S == false then
+			Acc
+		else
+			{LoadHistory F S|Acc}
+		end
+	end
 
 	% Fetch Tweets Folder from CLI Arguments
 	% See the Makefile for an example of how it is called
@@ -93,15 +108,8 @@ define
 		end
 	end
 
-	fun {GetFileContent File} % File = 'tweets/...'
-		F = {New TextFile init(name:File flags:[read])}
-		L 
-	in 
-		{F read(list:L size:all)}
-		L
-	end
-
 	fun {GetFiles L} % L = {OS.getDir TweetsFolder}
+		% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
 		case L 
 			of nil then nil
 			[] H|T then {String.toAtom {Append "tweets/" H}}|{GetFiles T} % gives: 'tweets/fileX.txt'
@@ -109,13 +117,6 @@ define
 	end
 
 	% Usefull function for later: {File GetS($)} -> gives the next line etc etc
-
-	proc {PrintFilesContent L}
-		case L 
-			of nil then skip
-			[] H|T then {Browse {GetFileContent H}} {PrintFilesContent T}
-		end
-	end
 
 	fun {Strcmp S1 S2} 
 		%% return 1 if strings are equal 
@@ -210,6 +211,13 @@ define
 			% {Browse R}
 		% {TestFile}
 		%end
+
+		local R in 
+			R = {GetHistory}
+			for Sent in R do 
+				{Browse {String.toAtom Sent}}
+			end
+		end
 
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
