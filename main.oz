@@ -37,9 +37,10 @@ define
 	%						<probability/frequence> := <int> | <float>
 
 	fun {Press}
-		local Out in
-			{InputText get(1: Out)}
-			{OutputText set(1: {String.toAtom Out})}
+		local In in
+			{InputText get(1: In)}
+			{OutputText set(1: {String.toAtom In})}
+			{AddHistory In}
 		end
 		% TODO
 		0
@@ -221,16 +222,6 @@ define
 		% {TestFile}
 		%end
 
-		local R in 
-
-			{AddHistory "monsieur"}
-
-			R = {GetHistory}
-			for Sent in R do 
-				{Browse {String.toAtom Sent}}
-			end
-		end
-
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
 				width: 1000
@@ -247,7 +238,6 @@ define
 					
 					title: "GPT-OZ 4"
 					background: c(52 53 65)
-
 					td(
 						height: 300
 						width: 400
