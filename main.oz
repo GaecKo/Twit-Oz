@@ -71,8 +71,17 @@ define
 		if S == false then
 			Acc
 		else
-			{LoadHistory F S|Acc}
+			{History F S|Acc}
 		end
+	end
+
+	proc {AddHistory Content}
+		F = {New TextFile init(name: 'history.txt' flags:[read write])}
+		Current
+	in
+		{F read(list:Current size:all)}
+		{F putS(Content)}
+		{F close}
 	end
 
 	% Fetch Tweets Folder from CLI Arguments
@@ -213,6 +222,9 @@ define
 		%end
 
 		local R in 
+
+			{AddHistory "monsieur"}
+
 			R = {GetHistory}
 			for Sent in R do 
 				{Browse {String.toAtom Sent}}
