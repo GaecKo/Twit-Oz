@@ -37,10 +37,11 @@ define
 	%						<probability/frequence> := <int> | <float>
 
 	fun {Press}
-		local In in
+		local In Out in
 			{InputText get(1: In)}
 			{OutputText set(1: {String.toAtom In})}
-			{AddHistory In}
+			Out = "Will have to be set"
+			{AddHistory In Out}
 		end
 		% TODO
 		0
@@ -60,6 +61,12 @@ define
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
 
+	proc {SetInOut In Out}
+		% Set InputText to In and OutputText to Out
+		{InputText set(1: In)}
+		{OutputText set(1: Out)}
+	end
+
 	fun {GetHistory}
 		F = {New TextFile init(name: 'history.txt' flags:[read])}
 	in
@@ -68,21 +75,67 @@ define
 
 	fun {History F Acc} 
 		S = {F getS($)}
+		Line
 	in
 		if S == false then
 			Acc
 		else
-			{History F S|Acc}
+			Line = {String.tokens S 124} % S split with "|"
+			{History F Line|Acc} 
 		end
 	end
 
-	proc {AddHistory Content}
+	proc {AddHistory Input Output}
+		% Append to history Input|Output\n
 		F = {New TextFile init(name: 'history.txt' flags:[read write])}
 		Current
+		Line = {Append {Append Input "|"} Output} % Input|Output
 	in
 		{F read(list:Current size:all)}
-		{F putS(Content)}
+		{F putS(Line)} 
 		{F close}
+	end
+
+	fun {CreatePanel}
+		% gives the left panel history
+		Panel = td(
+			background: c(42 43 45)
+			glue: nw
+			padx: 50
+			0: label(
+				text: "History"
+				foreground: white
+				glue: nwe
+				pady: 10
+				background: c(42 43 45)
+			)
+		)
+	in
+		{AddPanel {GetHistory} Panel 1}
+	end
+
+	fun	{AddPanel Lst Acc Index}
+		% Creates a record: ...(... 1: button(...) 2: button(...))
+		case Lst 
+			of nil then 
+				Acc
+			[] (H1|H2)|T then 
+				local Buttn in
+					Buttn = button(
+						width: 15
+						background: c(42 43 45)
+						glue: nwe
+						text: H1
+						relief: raised
+						action: proc {$}
+							{SetInOut H1 H2.1}
+						end
+					)
+					{AddPanel T {AdjoinAt Acc Index Buttn} Index + 1}
+				end
+			else
+				0	
+		end
 	end
 
 	% Fetch Tweets Folder from CLI Arguments
@@ -235,186 +288,191 @@ define
 
 			local R in
 				Description=td(
-					
 					title: "GPT-OZ 4"
-					background: c(52 53 65)
-					td(
-						height: 300
-						width: 400
-						background: c(52 53 65)
-						padx: 50
-						pady:30 
-						
-						label(
-							text: "GPT-OZ 4"
-							foreground: white
-							glue: nswe
-							pady: 10
-							background: c(52 53 65)
-						)
+					background: c(42 43 45)
 
-						lr( % three columns 
-							width: 300
-							height: 100
-							background: c(52 53 65)
+					lr(
+						background: c(42 43 45)
+						{CreatePanel}
 
-							td(
-								glue:wns
+						td(
+							height: 300
+							width: 400
+							background: c(52 53 65)
+							padx: 10
+							% pady:30 
+							
+							label(
+								text: "GPT-OZ 4"
+								foreground: white
+								glue: nswe
+								pady: 10
 								background: c(52 53 65)
-								padx:10
+							)
 
-								label(
-									text: "Examples"
-									foreground: white
+							lr( % three columns 
+								width: 300
+								height: 100
+								background: c(52 53 65)
+
+								td(
+									glue:wns
 									background: c(52 53 65)
-									pady: 5
-									glue: nwe
+									padx:10
+
+									label(
+										text: "Examples"
+										foreground: white
+										background: c(52 53 65)
+										pady: 5
+										glue: nwe
+									)
+
+									label(
+										text: "Tesla is ...\nshareholders'\nvictory."
+										foreground: white
+										background: c(64 65 79)
+										pady:5
+										glue: nwe 
+									)
+
+									label(
+										text: "I am ...\nclose\npoverty."
+										foreground: white
+										background: c(64 65 79)
+										pady:5
+										glue: nwe
+									)
+
+									label(
+										text: "I should...\nresell Twitter."
+										foreground: white
+										background: c(64 65 79)
+										pady:5
+										glue: nwe
+									)
 								)
 
-								label(
-									text: "Tesla is ...\nshareholders'\nvictory."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe 
+								td(
+									glue:wns
+									background: c(52 53 65)
+									padx:10
+
+									label(
+										text: "Possibilities"
+										foreground: white
+										background: c(52 53 65)
+										pady: 5
+										glue: nwe
+									)
+
+									label(
+										text: "Get automatic\nTweets"
+										foreground: white
+										background: c(64 65 79)
+										pady: 5
+										glue: nwe 
+									)
+
+									label(
+										text: "2-grammes\nprediction\nbased"
+										foreground: white
+										background: c(64 65 79)
+										pady: 5
+										glue: nwe
+									)
+
+									label(
+										text: "Easy and\ncomplete\ntweets"
+										foreground: white
+										background: c(64 65 79)
+										pady: 5
+										glue: nwe
+									)
 								)
 
-								label(
-									text: "I am ...\nclose\npoverty."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
+								td(
+									glue:wns
+									background: c(52 53 65)
+									padx:10
 
-								label(
-									text: "I should...\nresell Twitter."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
+									1: label(
+										text: "Limitations"
+										foreground: white
+										background: c(52 53 65)
+										pady: 5
+										glue: nwe
+									)
+
+									2: label(
+										text: "Elon Musk\ntweetosphere"
+										foreground: white
+										background: c(64 65 79)
+										pady: 8
+										glue: nwe 
+									)
+
+									3: label(
+										text: "Maximum \nresponse\nof 100 words"
+										foreground: white
+										background: c(64 65 79)
+										pady: 8
+										glue: nwe
+									)
+
+									4: label(
+										text: "Oz slowness\n& bugs"
+										foreground: white
+										background: c(64 65 79)
+										pady: 8
+										glue: nwe
+									)
 								)
 							)
 
-							td(
-								glue:wns
+							text(
+								handle: OutputText
+								width: 100
+								height: 10
 								background: c(52 53 65)
-								padx:10
-
-								label(
-									text: "Possibilities"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Get automatic\nTweets"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe 
-								)
-
-								label(
-									text: "2-grammes\nprediction\nbased"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Easy and\ncomplete\ntweets"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
+								highlightthickness:0
+								foreground: white
+								glue: nswe
+								wrap: word
+								borderwidth: 0
 							)
 
-							td(
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								label(
-									text: "Limitations"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Elon Musk\ntweetosphere"
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe 
-								)
-
-								label(
-									text: "Maximum \nresponse\nof 100 words"
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-
-								label(
-									text: "Oz slowness\n& bugs"
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
+							text(
+								glue: nswe
+								handle: InputText
+								width: 100
+								height: 5
+								background: c(64 65 79)
+								borderwidth: 2
+								foreground: white
+								wrap: word
 							)
-						)
+							
+							button(
+								text: "PREDICT"
+								relief: groove
+								foreground: c(52 53 65)
+								background: white 
+								width: 10
+								glue: s
+								action: proc {$}
+									{OnPress R}
+								end
+							)
 
-						text(
-							handle: OutputText
-							width: 100
-							height: 10
-							background: c(52 53 65)
-							highlightthickness:0
-							foreground: white
-							glue: nswe
-							wrap: word
-							borderwidth: 0
-						)
-
-						text(
-							glue: nswe
-							handle: InputText
-							width: 100
-							height: 5
-							background: c(64 65 79)
-							borderwidth: 2
-							foreground: white
-							wrap: word
-						)
-						
-						button(
-							text: "PREDICT"
-							relief: groove
-							foreground: c(52 53 65)
-							background: white 
-							width: 10
-							glue: s
-							action: proc {$}
-								{OnPress R}
-							end
-						)
-
-						label(
-							text: "@GPT-OZ 4 is under MIT license & still in development. \nNo warranty of work is given and it should be used at your own risk. "
-							foreground: white
-							glue: swe
-							pady: 20
-							background: c(52 53 65)
-						)						
+							label(
+								text: "@GPT-OZ 4 is under MIT license & still in development. \nNo warranty of work is given and it should be used at your own risk. "
+								foreground: white
+								glue: swe
+								pady: 20
+								background: c(52 53 65)
+							)						
+						)			
 					)
 
 					% quit program when window is closed
