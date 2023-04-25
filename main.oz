@@ -55,17 +55,26 @@ define
 
 	proc {ReadPart N}
 		F = {New TextFile init(name: "tweets/part_" # N # ".txt" flags: [read])}
+		Tweet
 	in
+		% read & close file
+
+		{F read(list: Tweet size: all)}
 		{F close}
+
+		{Browse Tweet}
 	end
 
 	proc {ReadThread Port N TotalN}
 		try
 			{ReadPart N}
-			% only if the previous succeeded
+
+			% only if the previous succeeded (i.e. file exists)
+
 			{ReadThread Port N + TotalN TotalN}
 		catch
 			% XXX I don't care enough to figure out the correct exception to catch :D
+
 			system(...) then skip
 		end
 	end
