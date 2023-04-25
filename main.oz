@@ -51,12 +51,34 @@ define
 		R = {Press}
 	end
 
-	% Lance les N threads de lecture et de parsing qui liront et traiteront tous les fichiers
-	% Les threads de parsing envoient leur resultat au port Port
+	% run N threads for reading/parsing files
+
+	proc {ReadPart N}
+		F = {New TextFile init(name: "tweets/part_" # N # ".txt" flags: [read])}
+	in
+		{F close}
+	end
+
+	proc {ReadThread Port N TotalN}
+		try
+			{ReadPart N}
+			% only if the previous succeeded
+			{ReadThread Port N + TotalN TotalN}
+		catch
+			% XXX I don't care enough to figure out the correct exception to catch :D
+			system(...) then skip
+		end
+	end
+
+	proc {LaunchThreadsAux Port N TotalN}
+		if N > 0 then
+			{LaunchThreadsAux Port N - 1 TotalN}
+			thread {ReadThread Port N - 1 TotalN} end
+		end
+	end
 
 	proc {LaunchThreads Port N}
-		% TODO
-		skip
+		{LaunchThreadsAux Port N N}
 	end
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
@@ -81,7 +103,7 @@ define
 			Acc
 		else
 			Line = {String.tokens S 124} % S split with "|"
-			{History F Line|Acc} 
+			{History F Line|Acc}
 		end
 	end
 
