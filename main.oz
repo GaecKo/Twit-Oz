@@ -1,3 +1,7 @@
+% vim: set nospell
+% vim: colorscheme gruvbox
+% vim: set background='dark'
+
 functor
 import 
 	QTk at 'x-oz://system/wp/QTk.ozf'
@@ -51,6 +55,25 @@ define
 		R = {Press}
 	end
 
+	% actually parse the tweet
+
+	proc {FeedWord W}
+		{Browse W}
+	end
+
+	proc {Parse S W}
+		case S
+			of H | T then
+				if H == ' ' then
+					{FeedWord W}
+					{Parse S ""}
+				else
+					{Parse S H | W}
+				end
+			[] nil then skip
+		end
+	end
+
 	% run N threads for reading/parsing files
 
 	proc {ReadPart N}
@@ -62,7 +85,9 @@ define
 		{F read(list: Tweet size: all)}
 		{F close}
 
-		{Browse Tweet}
+		% parse
+
+		{Parse Tweet ""}
 	end
 
 	proc {ReadThread Port N TotalN}
@@ -112,7 +137,7 @@ define
 			Acc
 		else
 			Line = {String.tokens S 124} % S split with "|"
-			{History F Line|Acc}
+			{History F Line | Acc}
 		end
 	end
 
