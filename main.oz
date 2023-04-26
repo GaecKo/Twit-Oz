@@ -75,6 +75,19 @@ define
 		end
 	end
 
+	proc {TokenizeWalk S}
+		case S
+			of H | T then
+				{TokenizerFeedWord H}
+				{TokenizeWalk T}
+			[] nil then skip
+		end
+	end
+
+	proc {Tokenize S W}
+		{TokenizeWalk {String.tokens S & }}
+	end
+
 	% run N threads for reading/parsing files
 
 	proc {ReadPart N}
@@ -90,7 +103,7 @@ define
 
 		% parse
 
-		{ManualTokenize Tweet ""}
+		{Tokenize Tweet ""}
 	end
 
 	proc {ReadThread Port N TotalN}
