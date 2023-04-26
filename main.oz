@@ -57,18 +57,19 @@ define
 
 	% actually parse the tweet
 
-	proc {FeedWord W}
-		{Browse W}
+	proc {TokenizerFeedWord W}
+		{Browse {String.toAtom W}}
+		% TODO do something with the word
 	end
 
-	proc {Parse S W}
+	proc {ManualTokenize S W}
 		case S
 			of H | T then
-				if H == ' ' then
-					{FeedWord W}
-					{Parse S ""}
+				if {Char.isSpace H} then
+					{TokenizerFeedWord W}
+					{ManualTokenize T ""}
 				else
-					{Parse S H | W}
+					{ManualTokenize T H | W}
 				end
 			[] nil then skip
 		end
@@ -77,6 +78,8 @@ define
 	% run N threads for reading/parsing files
 
 	proc {ReadPart N}
+		% TODO apparently I need to be able to read arbitrary files, not just those of the format "tweets/part_*.txt"
+
 		F = {New TextFile init(name: "tweets/part_" # N # ".txt" flags: [read])}
 		Tweet
 	in
@@ -87,7 +90,7 @@ define
 
 		% parse
 
-		{Parse Tweet ""}
+		{ManualTokenize Tweet ""}
 	end
 
 	proc {ReadThread Port N TotalN}
@@ -112,7 +115,8 @@ define
 	end
 
 	proc {LaunchThreads Port N}
-		{LaunchThreadsAux Port N N}
+		% {LaunchThreadsAux Port N N}
+		{ReadPart 1}
 	end
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
@@ -315,6 +319,7 @@ define
 		TweetsFolder = {GetSentenceFolder}
 		Files = {GetFiles {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
 	in
+
 		% Fonction d'exemple qui liste tous les fichiers
 		% contenus dans le dossier passe en Argument.
 		% Inspirez vous en pour lire le contenu des fichiers
