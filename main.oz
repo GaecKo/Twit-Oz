@@ -92,12 +92,11 @@ define
 		{TokenizeWalk {String.tokens S & }}
 	end
 
-	% run N threads for reading/parsing files
-
-	proc {ReadPart N}
+	proc {ReadPart Port Name}
 		% TODO apparently I need to be able to read arbitrary files, not just those of the format "tweets/part_*.txt"
+		{Print "tweets/" # Name}
 
-		F = {New TextFile init(name: "tweets/part_" # N # ".txt" flags: [read])}
+		F = {New TextFile init(name: Name flags: [read])}
 		Tweet
 	in
 		% read & close file
@@ -107,21 +106,30 @@ define
 
 		% parse
 
-		{Tokenize Tweet ""}
+		{Print Tweet}
 	end
 
-	proc {ReadThread Port N TotalN}
-		try
-			{ReadPart N}
+	% read each file this thread is supposed to read in the Files list
 
-			% only if the previous succeeded (i.e. file exists)
-
-			{ReadThread Port N + TotalN TotalN}
-		catch
-			% XXX I don't care enough to figure out the correct exception to catch :D
-
-			system(...) then skip
+	proc {ReadThread Files Port N TotalN}
+		if N > TotalN then
+			{ReadPart Port {List.nth Files N}}
 		end
+
+		{ReadThread Files Port N + TotalN TotalN}
+	end
+
+	% run N threads for reading/parsing files
+
+	proc {LaunchThreadsAux Files Port N TotalN}
+		if N > 0 then
+			{LaunchThreadsAux Files Port N - 1 TotalN}
+			thread {ReadThread Files Port N - 1 TotalN} end
+		end
+	end
+
+	proc {LaunchThreads Files Port N}
+		{LaunchThreadsAux Files Port N N}
 	end
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
@@ -323,13 +331,6 @@ define
 		SequenceList = {String.tokens SequenceString 32}
 	in
 		{FindInSequence SequenceList SentenceList nil SequenceList}
-	end
-
-	proc {LaunchThreads Files Port N TotalN}
-		if N > 0 then
-			{LaunchThreads Files Port N - 1 TotalN}
-			thread {ReadThread Port N - 1 TotalN} end
-		end
 	end
 
 	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
@@ -581,7 +582,7 @@ define
 
 			SeparatedWordsPort = {NewPort SeparatedWordsStream}
 			NbThreads = 4
-			% {LaunchThreads Files SeparatedWordsPort NbThreads}
+			{LaunchThreads Files SeparatedWordsPort NbThreads}
 
 			{InputText set(
 				1: ""
