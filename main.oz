@@ -59,39 +59,6 @@ define
 		R = {Press}
 	end
 
-	% actually parse the tweet
-
-	proc {TokenizerFeedWord W}
-		{Print {String.toAtom W}}
-		% TODO do something with the word
-	end
-
-	proc {ManualTokenize S W}
-		case S
-			of H | T then
-				if {Char.isSpace H} then
-					{TokenizerFeedWord W}
-					{ManualTokenize T ""}
-				else
-					{ManualTokenize T H | W}
-				end
-			[] nil then skip
-		end
-	end
-
-	proc {TokenizeWalk S}
-		case S
-			of H | T then
-				{TokenizerFeedWord H}
-				{TokenizeWalk T}
-			[] nil then skip
-		end
-	end
-
-	proc {Tokenize S W}
-		{TokenizeWalk {String.tokens S & }}
-	end
-
 	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
 
 	fun {GetFileLinesAux F Acc}
