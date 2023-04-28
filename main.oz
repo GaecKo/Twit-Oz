@@ -47,11 +47,10 @@ define
 	fun {Press}
 		local In Out in
 			{InputText get(1: In)}
-			{OutputText set(1: {String.toAtom In})}
-			Out = "Will have to be set"
+			Out = {VirtualString.toString In#"Will have to be set"}
+			{OutputText set(1: {String.toAtom Out})}
 			{AddHistory In Out}
 		end
-		% TODO
 		0
 	end
 
@@ -123,6 +122,8 @@ define
 		if N =< FileCount then
 			{ReadPart P {List.nth Files N}} % List.nth starts counting at 1
 			{ReadThread Files FileCount P N + TotalN TotalN}
+		else
+			{Port.send P thistokenshouldneverappearinthetweets}
 		end
 	end
 
@@ -158,12 +159,14 @@ define
 	proc {ConsumeAux S ?Dict}
 		case S
 			of Word | T then
-				case T
-					of nil then skip
-					[] Next | _ then
-						{AddToDict Word Next Dict}
-						{ConsumeAux T Dict}
-					else skip
+				if Word \= thistokenshouldneverappearinthetweets then
+					case T
+						of nil then skip
+						[] Next | _ then
+							{AddToDict Word Next Dict}
+							{ConsumeAux T Dict}
+						else skip
+					end
 				end
 			else skip
 		end
@@ -616,8 +619,15 @@ define
 
 			SeparatedWordsPort = {NewPort SeparatedWordsStream}
 			NbThreads = 4
+
+			{Print "Launch producer threads"}
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
+
+			{Print "Consume words stream"}
 			Dict = {Consume SeparatedWordsStream}
+
+			{Print "Done"}
+			{Browse Dict}
 
 			{InputText set(
 				1: ""
