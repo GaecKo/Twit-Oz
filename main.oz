@@ -120,18 +120,6 @@ define
 		end
 	end
 
-	proc {LaunchThreadsAux Port N TotalN}
-		if N > 0 then
-			{LaunchThreadsAux Port N - 1 TotalN}
-			thread {ReadThread Port N - 1 TotalN} end
-		end
-	end
-
-	proc {LaunchThreads Port N}
-		% {LaunchThreadsAux Port N N}
-		{ReadPart 1}
-	end
-
 	% Ajouter vos fonctions et procédures auxiliaires ici
 
 	proc {SetInOut In Out}
@@ -160,12 +148,17 @@ define
 
 	proc {AddHistory Input Output}
 		% Append to history Input|Output\n
-		F = {New TextFile init(name: 'history.txt' flags:[read write])}
-		Current
+		F = {New TextFile init(name: 'history.txt' flags: [read write])}
 		Line = {Append {Append Input "|"} Output} % Input|Output
+		WDesc
 	in
-		{F read(list:Current size:all)}
-		{F putS(Line)} 
+		% XXX can't do this for the moment - cf. https://github.com/mozart/mozart2/pull/345
+		% {F seek(whence: 'end' offset: 0)}
+
+		{F getDesc(WDesc _)}
+		{OS.lSeek WDesc 'SEEK_END' 0 _}
+
+		{F putS(Line)}
 		{F close}
 	end
 
@@ -327,12 +320,18 @@ define
 		{FindInSequence SequenceList SentenceList nil SequenceList}
 	end
 
+	proc {LaunchThreads Files Port N TotalN}
+		if N > 0 then
+			{LaunchThreads Files Port N - 1 TotalN}
+			thread {ReadThread Port N - 1 TotalN} end
+		end
+	end
+
 	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
 		Files = {GetFiles {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
 	in
-
 		% Fonction d'exemple qui liste tous les fichiers
 		% contenus dans le dossier passe en Argument.
 		% Inspirez vous en pour lire le contenu des fichiers
@@ -540,7 +539,7 @@ define
 							)
 
 							label(
-								text: "@GPT-OZ 4 is under MIT license & still in development. \nNo warranty of work is given and it should be used at your own risk. "
+								text: "@GPT-OZ 4 is under MIT license & still in development.\nNo warranty of work is given and it should be used at your own risk."
 								foreground: white
 								glue: swe
 								pady: 20
@@ -577,7 +576,7 @@ define
 
 			SeparatedWordsPort = {NewPort SeparatedWordsStream}
 			NbThreads = 4
-			{LaunchThreads SeparatedWordsPort NbThreads}
+			% {LaunchThreads Files SeparatedWordsPort NbThreads}
 
 			{InputText set(
 				1: ""
