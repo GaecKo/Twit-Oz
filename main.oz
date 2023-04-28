@@ -93,11 +93,9 @@ define
 	end
 
 	proc {ReadPart Port Name}
-		% TODO apparently I need to be able to read arbitrary files, not just those of the format "tweets/part_*.txt"
-		{Print "tweets/" # Name}
-
 		F = {New TextFile init(name: Name flags: [read])}
 		Tweet
+		Tokens
 	in
 		% read & close file
 
@@ -106,17 +104,16 @@ define
 
 		% parse
 
-		{Print Tweet}
+		Tokens = {String.tokens Tweet & }
 	end
 
 	% read each file this thread is supposed to read in the Files list
 
-	proc {ReadThread Files Port N TotalN}
-		if N > TotalN then
-			{ReadPart Port {List.nth Files N}}
+	proc {ReadThread Files FileCount Port N TotalN}
+		if N =< FileCount then
+			{ReadPart Port {List.nth Files N}} % List.nth starts counting at 1
+			{ReadThread Files FileCount Port N + TotalN TotalN}
 		end
-
-		{ReadThread Files Port N + TotalN TotalN}
 	end
 
 	% run N threads for reading/parsing files
@@ -124,7 +121,8 @@ define
 	proc {LaunchThreadsAux Files Port N TotalN}
 		if N > 0 then
 			{LaunchThreadsAux Files Port N - 1 TotalN}
-			thread {ReadThread Files Port N - 1 TotalN} end
+			thread {ReadThread Files {List.length Files} Port N TotalN} end
+			% {ReadThread Files {List.length Files} Port N TotalN}
 		end
 	end
 
