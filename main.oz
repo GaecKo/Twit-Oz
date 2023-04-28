@@ -75,21 +75,33 @@ define
 		{GetFileLinesAux F nil}
 	end
 
+	% send list of tokens to port
+
+	proc {SendTokens P Tokens}
+		case Tokens
+			of H | T then
+				{Port.send P H}
+				{SendTokens P T}
+			[] nil then skip
+		end
+	end
+
 	% parse tweet into tokens
-	% each token is sent to the Port port
 	% XXX currently, this is just splitting by space - this should be a bit more involved
 
-	proc {ParseTweet Port Tweet}
-		{Browse {String.tokens Tweet & }}
+	proc {ParseTweet P Tweet}
+		Tokens = {String.tokens Tweet & }
+	in
+		{SendTokens P Tokens}
 	end
 
 	% go through a list of tweets and parse them
 
-	proc {ParseTweets Port Tweets}
+	proc {ParseTweets P Tweets}
 		case Tweets
 			of H | T then
-				{ParseTweet Port H}
-				{ParseTweets Port T}
+				{ParseTweet P H}
+				{ParseTweets P T}
 			[] nil then skip
 		end
 	end
@@ -97,35 +109,35 @@ define
 	% read a given part file
 	% each file consists of a bunch of tweets, each on their own line
 
-	proc {ReadPart Port Name}
+	proc {ReadPart P Name}
 		F = {New TextFile init(name: Name flags: [read])}
 		Tweets = {GetFileLines F}
 	in
 		{F close}
-		{ParseTweets Port Tweets}
+		{ParseTweets P Tweets}
 	end
 
 	% read each file this thread is supposed to read in the Files list
 
-	proc {ReadThread Files FileCount Port N TotalN}
+	proc {ReadThread Files FileCount P N TotalN}
 		if N =< FileCount then
-			{ReadPart Port {List.nth Files N}} % List.nth starts counting at 1
-			{ReadThread Files FileCount Port N + TotalN TotalN}
+			{ReadPart P {List.nth Files N}} % List.nth starts counting at 1
+			{ReadThread Files FileCount P N + TotalN TotalN}
 		end
 	end
 
 	% run N threads for reading/parsing files
 
-	proc {LaunchThreadsAux Files Port N TotalN}
+	proc {LaunchThreadsAux Files P N TotalN}
 		if N > 0 then
-			{LaunchThreadsAux Files Port N - 1 TotalN}
-			thread {ReadThread Files {List.length Files} Port N TotalN} end
-			% {ReadThread Files {List.length Files} Port N TotalN}
+			{LaunchThreadsAux Files P N - 1 TotalN}
+			thread {ReadThread Files {List.length Files} P N TotalN} end
+			% {ReadThread Files {List.length Files} P N TotalN}
 		end
 	end
 
-	proc {LaunchThreads Files Port N}
-		{LaunchThreadsAux Files Port N N}
+	proc {LaunchThreads Files P N}
+		{LaunchThreadsAux Files P N N}
 	end
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
