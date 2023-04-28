@@ -12,6 +12,10 @@ import
 	Property
 	Browser
 define
+	% to make life easier...
+
+	Print = System.showInfo
+
 	% Pour ouvrir les fichiers
 
 	class TextFile
@@ -58,7 +62,7 @@ define
 	% actually parse the tweet
 
 	proc {TokenizerFeedWord W}
-		{Browse {String.toAtom W}}
+		{Print {String.toAtom W}}
 		% TODO do something with the word
 	end
 
@@ -222,7 +226,7 @@ define
 	% Decomnentez moi si besoin
 	proc {ListAllFiles L}
 		case L of nil then skip
-		[] H|T then {Browse {String.toAtom H}} {ListAllFiles T}
+		[] H|T then {Print {String.toAtom H}} {ListAllFiles T}
 		end
 	end
 
@@ -245,24 +249,25 @@ define
 		end
 	end
 
-	% Usefull function for later: {File GetS($)} -> gives the next line etc etc
+	% Useful function for later: {File GetS($)} -> gives the next line etc etc
 
 	fun {Strcmp S1 S2} 
-		%% return 1 if strings are equal 
+		% return true if strings are equal regardless of case
+
 		case S1 
 			of nil then 
-				if S2 == nil 
-					then 1
+				if S2 == nil then
+					true
 				else 
-					0
+					false
 				end
 			[] H|T then 
 				if S2 == nil then
-					0 
+					false
 				elseif {Char.toLower H} == {Char.toLower S2.1} then
 					{Strcmp T S2.2}
 				else 
-					0
+					false
 				end
 		end
 	end
