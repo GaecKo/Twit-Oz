@@ -251,7 +251,7 @@ define
 
 	% Useful function for later: {File GetS($)} -> gives the next line etc etc
 
-	fun {Strcmp S1 S2} 
+	fun {Strcasecmp S1 S2}
 		% return true if strings are equal regardless of case
 
 		case S1 
@@ -265,7 +265,7 @@ define
 				if S2 == nil then
 					false
 				elseif {Char.toLower H} == {Char.toLower S2.1} then
-					{Strcmp T S2.2}
+					{Strcasecmp T S2.2}
 				else 
 					false
 				end
@@ -283,7 +283,7 @@ define
 				Acc
 			else
 				if SeqLen == 1 then
-					if {Strcmp SequenceList.1 SentenceList.1} == 1 then
+					if {Strcasecmp SequenceList.1 SentenceList.1} == 1 then
 						Word = SentenceList.2.1 % next word found ! 
 						Found = 1
 					else
@@ -302,7 +302,7 @@ define
 						{FindInSequence Initial SentenceList Acc Initial}
 					end
 	
-				elseif {Strcmp SequenceList.1 SentenceList.1} == 1 then
+				elseif {Strcasecmp SequenceList.1 SentenceList.1} == 1 then
 					if Found == 1 then % add Word to list and continue checking for equivalence with further words in tail of sentence
 						{FindInSequence SequenceList.2 SentenceList.2 Word|Acc Initial}
 					else
