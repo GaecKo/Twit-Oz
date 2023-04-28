@@ -79,7 +79,7 @@ define
 
 	proc {SendTokens P Tokens}
 		case Tokens
-			of H | T then
+			of H | T then % TODO check if this is TCO-able in Oz
 				{Port.send P H}
 				{SendTokens P T}
 			[] nil then skip
@@ -99,7 +99,7 @@ define
 
 	proc {ParseTweets P Tweets}
 		case Tweets
-			of H | T then
+			of H | T then % TODO check if this is TCO-able in Oz
 				{ParseTweet P H}
 				{ParseTweets P T}
 			[] nil then skip
@@ -128,16 +128,28 @@ define
 
 	% run N threads for reading/parsing files
 
-	proc {LaunchThreadsAux Files P N TotalN}
+	proc {LaunchProducerThreadsAux Files P N TotalN}
 		if N > 0 then
-			{LaunchThreadsAux Files P N - 1 TotalN}
+			{LaunchProducerThreadsAux Files P N - 1 TotalN}
 			thread {ReadThread Files {List.length Files} P N TotalN} end
 			% {ReadThread Files {List.length Files} P N TotalN}
 		end
 	end
 
-	proc {LaunchThreads Files P N}
-		{LaunchThreadsAux Files P N N}
+	proc {LaunchProducerThreads Files P N}
+		{LaunchProducerThreadsAux Files P N N}
+	end
+
+	% consume the tweet stream
+	% a stream basically acts as a big list
+
+	proc {Consume S}
+		case S
+			of H | T then
+				{Browse {String.toAtom H}}
+				{Consume T}
+			else skip
+		end
 	end
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
@@ -579,7 +591,8 @@ define
 
 			SeparatedWordsPort = {NewPort SeparatedWordsStream}
 			NbThreads = 4
-			{LaunchThreads Files SeparatedWordsPort NbThreads}
+			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
+			{Consume SeparatedWordsStream}
 
 			{InputText set(
 				1: ""
