@@ -4,13 +4,13 @@
 
 functor
 import
-	QTk at 'x-oz://system/wp/QTk.ozf'
-	System
 	Application
+	Browser
 	Open
 	OS
 	Property
-	Browser
+	QTk at 'x-oz://system/wp/QTk.ozf'
+	System
 define
 	% to make life easier...
 
@@ -140,16 +140,30 @@ define
 		{LaunchProducerThreadsAux Files P N N}
 	end
 
+	% add word to dictionnary
+
+	proc {AddToDict Word ?Dict}
+		{Browse Word}
+	end
+
 	% consume the tweet stream
 	% a stream basically acts as a big list
+	% TODO find a better name for this than "Dict"
 
-	proc {Consume S}
+	proc {ConsumeAux S ?Dict}
 		case S
 			of H | T then
-				{Browse {String.toAtom H}}
-				{Consume T}
+				{AddToDict H Dict}
+				{ConsumeAux T Dict}
 			else skip
 		end
+	end
+
+	fun {Consume S}
+		Dict = {Dictionary.new}
+	in
+		{ConsumeAux S Dict}
+		Dict
 	end
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
@@ -161,7 +175,7 @@ define
 	end
 
 	fun {GetHistory}
-		F = {New TextFile init(name: 'history.txt' flags:[read])}
+		F = {New TextFile init(name: 'history.txt' flags: [read])}
 	in
 		{History F nil}
 	end
@@ -346,6 +360,7 @@ define
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
 		Files = {GetFiles {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
+		Dict
 	in
 		% Fonction d'exemple qui liste tous les fichiers
 		% contenus dans le dossier passe en Argument.
@@ -592,7 +607,7 @@ define
 			SeparatedWordsPort = {NewPort SeparatedWordsStream}
 			NbThreads = 4
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
-			{Consume SeparatedWordsStream}
+			Dict = {Consume SeparatedWordsStream}
 
 			{InputText set(
 				1: ""
