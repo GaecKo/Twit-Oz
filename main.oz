@@ -80,7 +80,7 @@ define
 	proc {SendTokens P Tokens}
 		case Tokens
 			of H | T then % TODO check if this is TCO-able in Oz
-				{Port.send P H}
+				{Port.send P {String.toAtom H}} % TODO check if this is faster than simply working with strings
 				{SendTokens P T}
 			[] nil then skip
 		end
@@ -141,9 +141,14 @@ define
 	end
 
 	% add word to dictionnary
+	% TODO explain this all better
 
-	proc {AddToDict Word ?Dict}
-		{Browse Word}
+	proc {AddToDict Word Next ?Dict}
+		Counts = {Dictionary.condGet Dict Word {Dictionary.new}}
+		NextCount = {Dictionary.condGet Counts Next 0}
+	in
+		{Dictionary.put Counts Next NextCount + 1}
+		{Dictionary.put Dict Word Counts}
 	end
 
 	% consume the tweet stream
@@ -152,9 +157,14 @@ define
 
 	proc {ConsumeAux S ?Dict}
 		case S
-			of H | T then
-				{AddToDict H Dict}
-				{ConsumeAux T Dict}
+			of Word | T then
+				case T
+					of nil then skip
+					[] Next | _ then
+						{AddToDict Word Next Dict}
+						{ConsumeAux T Dict}
+					else skip
+				end
 			else skip
 		end
 	end
