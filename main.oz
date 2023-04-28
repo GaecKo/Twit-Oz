@@ -3,7 +3,7 @@
 % vim: set background='dark'
 
 functor
-import 
+import
 	QTk at 'x-oz://system/wp/QTk.ozf'
 	System
 	Application
@@ -27,7 +27,7 @@ define
 	end
 
 	% === global var ===
-	InputText 
+	InputText
 	OutputText
 	Files
 	% === === == === ===
@@ -92,19 +92,50 @@ define
 		{TokenizeWalk {String.tokens S & }}
 	end
 
+	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
+
+	fun {GetFileLinesAux F Acc}
+		Tweet = {F getS($)}
+	in
+		if Tweet == false then
+			Acc
+		else
+			{GetFileLinesAux F Tweet | Acc}
+		end
+	end
+
+	fun {GetFileLines F}
+		{GetFileLinesAux F nil}
+	end
+
+	% parse tweet into tokens
+	% each token is sent to the Port port
+	% XXX currently, this is just splitting by space - this should be a bit more involved
+
+	proc {ParseTweet Port Tweet}
+		{Browse {String.tokens Tweet & }}
+	end
+
+	% go through a list of tweets and parse them
+
+	proc {ParseTweets Port Tweets}
+		case Tweets
+			of H | T then
+				{ParseTweet Port H}
+				{ParseTweets Port T}
+			[] nil then skip
+		end
+	end
+
+	% read a given part file
+	% each file consists of a bunch of tweets, each on their own line
+
 	proc {ReadPart Port Name}
 		F = {New TextFile init(name: Name flags: [read])}
-		Tweet
-		Tokens
+		Tweets = {GetFileLines F}
 	in
-		% read & close file
-
-		{F read(list: Tweet size: all)}
 		{F close}
-
-		% parse
-
-		Tokens = {String.tokens Tweet & }
+		{ParseTweets Port Tweets}
 	end
 
 	% read each file this thread is supposed to read in the Files list
@@ -144,7 +175,7 @@ define
 		{History F nil}
 	end
 
-	fun {History F Acc} 
+	fun {History F Acc}
 		S = {F getS($)}
 		Line
 	in
@@ -192,10 +223,10 @@ define
 
 	fun	{AddPanel Lst Acc Index}
 		% Creates a record: ...(... 1: button(...) 2: button(...))
-		case Lst 
-			of nil then 
+		case Lst
+			of nil then
 				Acc
-			[] (H1|H2)|T then 
+			[] (H1|H2)|T then
 				local Buttn in
 					Buttn = button(
 						width: 15
@@ -236,20 +267,9 @@ define
 		end
 	end
 
-	fun {GetFileLines File Acc} % File = fd
-		%% return a list of the sentences within a file (without the \n): sentence_N | sentence_N-1 | ... | nil
-		Sentence = {File getS($) } 
-	in
-		if Sentence == false then
-			Acc
-		else 
-			{GetFileLines File Sentence|Acc}
-		end
-	end
-
 	fun {GetFiles L} % L = {OS.getDir TweetsFolder}
 		% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
-		case L 
+		case L
 			of nil then nil
 			[] H|T then {String.toAtom {Append "tweets/" H}}|{GetFiles T} % gives: 'tweets/fileX.txt'
 		end
@@ -260,27 +280,27 @@ define
 	fun {Strcasecmp S1 S2}
 		% return true if strings are equal regardless of case
 
-		case S1 
-			of nil then 
+		case S1
+			of nil then
 				if S2 == nil then
 					true
-				else 
+				else
 					false
 				end
-			[] H|T then 
+			[] H|T then
 				if S2 == nil then
 					false
 				elseif {Char.toLower H} == {Char.toLower S2.1} then
 					{Strcasecmp T S2.2}
-				else 
+				else
 					false
 				end
 		end
 	end
 
 	fun {FindInSequence SequenceList SentenceList Acc Initial}
-		%% Check for Sequence within Sentence: 
-		%% [Hello I] [Sir Hello I am happy] -> [Hello I] [Hello I am happy] -> [I] [I am happy] -> [am] added 
+		%% Check for Sequence within Sentence:
+		%% [Hello I] [Sir Hello I am happy] -> [Hello I] [Hello I am happy] -> [I] [I am happy] -> [am] added
 		SenLen = {List.length SentenceList}
 		SeqLen = {List.length SequenceList}
 	in
@@ -290,7 +310,7 @@ define
 			else
 				if SeqLen == 1 then
 					if {Strcasecmp SequenceList.1 SentenceList.1} == 1 then
-						Word = SentenceList.2.1 % next word found ! 
+						Word = SentenceList.2.1 % next word found !
 						Found = 1
 					else
 						Word = nil
@@ -323,7 +343,7 @@ define
 	end
 
 	fun {FindinString SequenceString SentenceString}
-		%% Strings is a String: "word1 word2", 
+		%% Strings is a String: "word1 word2",
 		%% Sentence a List of String: "word1 word2 word3 word4"
 		SentenceList = {String.tokens SentenceString 32} % = Sentence.split(" ")
 		SequenceList = {String.tokens SequenceString 32}
@@ -343,7 +363,7 @@ define
 		% N'appelez PAS cette fonction lors de la phase de
 		% soumission !!!
 
-		% {PrintFilesContent Files} % Just prints all the content of files 
+		% {PrintFilesContent Files} % Just prints all the content of files
 		%local R in
 			% R = {FindinString "hello" "hello sir i am"}
 			% R = {FindinString "I am" "Today I am with my best friend Roberto, I am glad :)))"} % -> [with glad]
@@ -377,7 +397,7 @@ define
 							width: 400
 							background: c(52 53 65)
 							padx: 10
-							% pady:30 
+							% pady:30
 							
 							label(
 								text: "GPT-OZ 4"
@@ -387,7 +407,7 @@ define
 								background: c(52 53 65)
 							)
 
-							lr( % three columns 
+							lr( % three columns
 								width: 300
 								height: 100
 								background: c(52 53 65)
@@ -410,7 +430,7 @@ define
 										foreground: white
 										background: c(64 65 79)
 										pady:5
-										glue: nwe 
+										glue: nwe
 									)
 
 									label(
@@ -448,7 +468,7 @@ define
 										foreground: white
 										background: c(64 65 79)
 										pady: 5
-										glue: nwe 
+										glue: nwe
 									)
 
 									label(
@@ -486,7 +506,7 @@ define
 										foreground: white
 										background: c(64 65 79)
 										pady: 8
-										glue: nwe 
+										glue: nwe
 									)
 
 									3: label(
@@ -534,7 +554,7 @@ define
 								text: "PREDICT"
 								relief: groove
 								foreground: c(52 53 65)
-								background: white 
+								background: white
 								width: 10
 								glue: s
 								action: proc {$}
