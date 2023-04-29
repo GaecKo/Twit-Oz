@@ -30,6 +30,7 @@ define
 	InputText
 	OutputText
 	Files
+	Unigram
 	% === === == === ===
 
 	% /!\ Fonction testee /!\
@@ -44,10 +45,44 @@ define
 	%														 | nil
 	%						<probability/frequence> := <int> | <float>
 
+	fun {HighestProbAux Keys Probs MaxCount MaxKey}
+		Count
+		NewMaxCount
+		NewMaxKey
+	in
+		case Keys
+			of H | T then
+				Count = {Dictionary.get Probs H}
+
+				if Count > MaxCount then
+					NewMaxKey = H
+					NewMaxCount = Count
+				else
+					NewMaxKey = MaxKey
+					NewMaxCount = MaxCount
+				end
+
+				{HighestProbAux T Probs NewMaxCount NewMaxKey}
+			[] nil then
+				MaxKey
+		end
+	end
+
+	fun {HighestProb Probs}
+		{HighestProbAux {Dictionary.keys Probs} Probs 0 nil}
+	end
+
+	fun {Predict Prompt}
+		Last = {String.toAtom {List.last {String.tokens Prompt & }}}
+		Probs = {Dictionary.get Unigram Last}
+	in
+		{HighestProb Probs}
+	end
+
 	fun {Press}
 		local In Out in
 			{InputText get(1: In)}
-			Out = {VirtualString.toString In#"Will have to be set"}
+			Out = {VirtualString.toString In # " " # {Predict In}}
 			{OutputText set(1: {String.toAtom Out})}
 			{AddHistory In Out}
 		end
@@ -132,8 +167,8 @@ define
 	proc {LaunchProducerThreadsAux Files P N TotalN}
 		if N > 0 then
 			{LaunchProducerThreadsAux Files P N - 1 TotalN}
-			thread {ReadThread Files {List.length Files} P N TotalN} end
-			% {ReadThread Files {List.length Files} P N TotalN}
+			% thread {ReadThread Files {List.length Files} P N TotalN} end
+			{ReadThread Files {List.length Files} P N TotalN}
 		end
 	end
 
@@ -409,7 +444,9 @@ define
 
 					lr(
 						background: c(42 43 45)
-						{CreatePanel}
+
+						% TODO add this back
+						% {CreatePanel}
 
 						td(
 							height: 300
@@ -624,10 +661,9 @@ define
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
 			{Print "Consume words stream"}
-			Dict = {Consume SeparatedWordsStream}
+			Unigram = {Consume SeparatedWordsStream}
 
 			{Print "Done"}
-			{Browse Dict}
 
 			{InputText set(
 				1: ""
