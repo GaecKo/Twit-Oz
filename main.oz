@@ -1,6 +1,4 @@
-% vim: set nospell
-% vim: colorscheme gruvbox
-% vim: set background='dark'
+% vim: nospell
 
 functor
 import
