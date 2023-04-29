@@ -31,6 +31,7 @@ define
 	OutputText
 	Files
 	Unigram
+	History
 	% === === == === ===
 
 	% /!\ Fonction testee /!\
@@ -84,7 +85,8 @@ define
 			{InputText get(1: In)}
 			Out = {VirtualString.toString In # " " # {Predict In}}
 			{OutputText set(1: {String.toAtom Out})}
-			{AddHistory In Out}
+			{AddHistory In}
+			{RefreshHistory In}
 		end
 		0
 	end
@@ -216,34 +218,32 @@ define
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
 
-	proc {SetInOut In Out}
-		% Set InputText to In and OutputText to Out
-		{InputText set(1: In)}
-		{OutputText set(1: Out)}
+	proc {RefreshHistory NewH}
+		Current
+	in
+		{History get(
+					1: Current
+				)}
+
+		{History set(
+					1: {VirtualString.toString NewH # "\n" # Current}
+				)}
 	end
 
 	fun {GetHistory}
+		% line1\nline2...
 		F = {New TextFile init(name: 'history.txt' flags: [read])}
+		Content
+		NewContent
 	in
-		{History F nil}
+		%% TODO: replace \n with \n + ... + \n
+		{F read(list: Content size: all)}
+		Content 
 	end
 
-	fun {History F Acc}
-		S = {F getS($)}
-		Line
-	in
-		if S == false then
-			Acc
-		else
-			Line = {String.tokens S 124} % S split with "|"
-			{History F Line | Acc}
-		end
-	end
-
-	proc {AddHistory Input Output}
+	proc {AddHistory Input}
 		% Append to history Input|Output\n
 		F = {New TextFile init(name: 'history.txt' flags: [read write])}
-		Line = {Append {Append Input "|"} Output} % Input|Output
 		WDesc
 	in
 		% XXX can't do this for the moment - cf. https://github.com/mozart/mozart2/pull/345
@@ -252,50 +252,19 @@ define
 		{F getDesc(WDesc _)}
 		{OS.lSeek WDesc 'SEEK_END' 0 _}
 
-		{F putS(Line)}
+		{F putS(Input)}
 		{F close}
 	end
 
-	fun {CreatePanel}
-		% gives the left panel history
-		Panel = td(
-			background: c(42 43 45)
-			glue: nw
-			padx: 50
-			0: label(
-				text: "History"
-				foreground: white
-				glue: nwe
-				pady: 10
-				background: c(42 43 45)
-			)
+	fun {GetHistoryLabel}
+		text(
+			handle: History
+			width: 20
+			foreground: white
+			background: c(52 53 65)
+			pady: 5
+			glue: nwe
 		)
-	in
-		{AddPanel {GetHistory} Panel 1}
-	end
-
-	fun	{AddPanel Lst Acc Index}
-		% Creates a record: ...(... 1: button(...) 2: button(...))
-		case Lst
-			of nil then
-				Acc
-			[] (H1|H2)|T then
-				local Buttn in
-					Buttn = button(
-						width: 15
-						background: c(42 43 45)
-						glue: nwe
-						text: H1
-						relief: raised
-						action: proc {$}
-							{SetInOut H1 H2.1}
-						end
-					)
-					{AddPanel T {AdjoinAt Acc Index Buttn} Index + 1}
-				end
-			else
-				0	
-		end
 	end
 
 	% Fetch Tweets Folder from CLI Arguments
@@ -417,15 +386,6 @@ define
 		% N'appelez PAS cette fonction lors de la phase de
 		% soumission !!!
 
-		% {PrintFilesContent Files} % Just prints all the content of files
-		%local R in
-			% R = {FindinString "hello" "hello sir i am"}
-			% R = {FindinString "I am" "Today I am with my best friend Roberto, I am glad :)))"} % -> [with glad]
-
-			% {Browse R}
-		% {TestFile}
-		%end
-
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
 				width: 1000
@@ -445,8 +405,19 @@ define
 					lr(
 						background: c(42 43 45)
 
-						% TODO add this back
-						% {CreatePanel}
+						td(
+							background: c(42 43 45)
+							glue: nw
+							padx: 50
+							0: label(
+								text: "History"
+								foreground: white
+								glue: nwe
+								pady: 10
+								background: c(42 43 45)
+							)
+							1: {GetHistoryLabel}
+						)
 
 						td(
 							height: 300
@@ -642,18 +613,20 @@ define
 
 				{InputText tk(insert 'end' "Loading... Please wait.")}
 
+				
+
 				{InputText bind(
 					event: "<Control-s>"
 					action: proc {$}
 						{OnPress R}
 					end
 				)}
-
-				% TODO we can use R now, it contains the result of the search in files
 			end
+		
+			{History set(1: {GetHistory})}
 
 			% On lance les threads de lecture et de parsing
-
+			
 			SeparatedWordsPort = {NewPort SeparatedWordsStream}
 			NbThreads = 4
 
@@ -664,6 +637,8 @@ define
 			Unigram = {Consume SeparatedWordsStream}
 
 			{Print "Done"}
+
+			
 
 			{InputText set(
 				1: ""
