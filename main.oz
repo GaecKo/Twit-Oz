@@ -30,6 +30,7 @@ define
 	Files
 	Unigram
 	Bigram
+	Trigram
 	History
 	% === === == === ===
 
@@ -75,9 +76,10 @@ define
 	fun {Predict Prompt}
 		Tokens = {String.tokens Prompt & }
 		TokenCount = {List.length Tokens}
-		BeforeLast = {List.nth Tokens TokenCount - 1}
-		Last = {List.nth Tokens TokenCount}
-		Probs = {Dictionary.get Bigram {String.toAtom {VirtualString.toString BeforeLast # " " # Last # " "}}}
+		Last3 = {List.nth Tokens TokenCount - 2}
+		Last2 = {List.nth Tokens TokenCount - 1}
+		Last1 = {List.nth Tokens TokenCount}
+		Probs = {Dictionary.get Trigram {String.toAtom {VirtualString.toString Last3 # " " # Last2 # " " # Last1 # " "}}}
 	in
 		{HighestProb Probs}
 	end
@@ -649,6 +651,9 @@ define
 
 			{Print "Consume word stream into bigram"}
 			Bigram = {ConsumeNgram 2 SeparatedWordsStream}
+
+			{Print "Consume word stream into trigram"}
+			Trigram = {ConsumeNgram 3 SeparatedWordsStream}
 
 			{Print "Done"}
 
