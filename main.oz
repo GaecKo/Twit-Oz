@@ -73,8 +73,11 @@ define
 	end
 
 	fun {Predict Prompt}
-		Last = {String.toAtom {List.last {String.tokens Prompt & }}}
-		Probs = {Dictionary.get Unigram {String.toAtom {VirtualString.toString Last # " "}}}
+		Tokens = {String.tokens Prompt & }
+		TokenCount = {List.length Tokens}
+		BeforeLast = {List.nth Tokens TokenCount - 1}
+		Last = {List.nth Tokens TokenCount}
+		Probs = {Dictionary.get Bigram {String.toAtom {VirtualString.toString BeforeLast # " " # Last # " "}}}
 	in
 		{HighestProb Probs}
 	end
