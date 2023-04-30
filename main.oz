@@ -29,6 +29,7 @@ define
 	OutputText
 	Files
 	Unigram
+	Bigram
 	History
 	% === === == === ===
 
@@ -73,7 +74,7 @@ define
 
 	fun {Predict Prompt}
 		Last = {String.toAtom {List.last {String.tokens Prompt & }}}
-		Probs = {Dictionary.get Unigram Last}
+		Probs = {Dictionary.get Unigram {String.toAtom {VirtualString.toString Last # " "}}}
 	in
 		{HighestProb Probs}
 	end
@@ -180,37 +181,48 @@ define
 	% TODO explain this all better
 
 	proc {AddToDict Word Next ?Dict}
-		Counts = {Dictionary.condGet Dict Word {Dictionary.new}}
+		WordAtom = {String.toAtom {VirtualString.toString Word}}
+		Counts = {Dictionary.condGet Dict WordAtom {Dictionary.new}}
 		NextCount = {Dictionary.condGet Counts Next 0}
 	in
 		{Dictionary.put Counts Next NextCount + 1}
-		{Dictionary.put Dict Word Counts}
+		{Dictionary.put Dict WordAtom Counts}
 	end
 
-	% consume the tweet stream
+	% consume the tweet stream into an n-gram
 	% a stream basically acts as a big list
 	% TODO find a better name for this than "Dict"
+	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
 
-	proc {ConsumeAux S ?Dict}
+	proc {ConsumeNgramGrams N S Key ?Dict}
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
-					case T
-						of nil then skip
-						[] Next | _ then
-							{AddToDict Word Next Dict}
-							{ConsumeAux T Dict}
-						else skip
+					if N == 0 then
+						{AddToDict Key Word Dict}
+					else
+						{ConsumeNgramGrams N - 1 T Key # Word # " " Dict}
 					end
 				end
 			else skip
 		end
 	end
 
-	fun {Consume S}
+	proc {ConsumeNgramAux N S ?Dict}
+		case S
+			of Word | T then
+				if Word \= thistokenshouldneverappearinthetweets then
+					{ConsumeNgramGrams N T "" Dict}
+					{ConsumeNgramAux N T Dict}
+				end
+			else skip
+		end
+	end
+
+	fun {ConsumeNgram N S}
 		Dict = {Dictionary.new}
 	in
-		{ConsumeAux S Dict}
+		{ConsumeNgramAux N S Dict}
 		Dict
 	end
 
@@ -611,8 +623,6 @@ define
 
 				{InputText tk(insert 'end' "Loading... Please wait.")}
 
-				
-
 				{InputText bind(
 					event: "<Control-s>"
 					action: proc {$}
@@ -631,12 +641,13 @@ define
 			{Print "Launch producer threads"}
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
-			{Print "Consume words stream"}
-			Unigram = {Consume SeparatedWordsStream}
+			{Print "Consume word stream into unigram"}
+			Unigram = {ConsumeNgram 1 SeparatedWordsStream}
+
+			{Print "Consume word stream into bigram"}
+			Bigram = {ConsumeNgram 2 SeparatedWordsStream}
 
 			{Print "Done"}
-
-			
 
 			{InputText set(
 				1: ""
