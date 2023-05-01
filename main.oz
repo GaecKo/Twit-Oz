@@ -226,51 +226,50 @@ define
 	% add word to dictionnary
 	% TODO explain this all better
 
-	proc {AddToDict Word Next ?Dict}
+	proc {AddToNgram Word Next ?Ngram}
 		WordAtom = {String.toAtom {VirtualString.toString Word}}
-		Counts = {Dictionary.condGet Dict WordAtom {Dictionary.new}}
+		Counts = {Dictionary.condGet Ngram WordAtom {Dictionary.new}}
 		NextCount = {Dictionary.condGet Counts Next 0}
 	in
 		{Dictionary.put Counts Next NextCount + 1}
-		{Dictionary.put Dict WordAtom Counts}
+		{Dictionary.put Ngram WordAtom Counts}
 	end
 
 	% consume the tweet stream into an n-gram
 	% a stream basically acts as a big list
-	% TODO find a better name for this than "Dict" (--> simply Ngram)
-	% TODO a little idiosyncratic to have Dict as a return parameter rather than a fun's return value
+	% TODO a little idiosyncratic to have Ngram as a return parameter rather than a fun's return value
 	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
 
-	proc {ConsumeNgramGrams N S Key ?Dict}
+	proc {ConsumeNgramGrams N S Key ?Ngram}
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
 					if N == 0 then
-						{AddToDict Key Word Dict}
+						{AddToNgram Key Word Ngram}
 					else
-						{ConsumeNgramGrams N - 1 T Key # Word # " " Dict}
+						{ConsumeNgramGrams N - 1 T Key # Word # " " Ngram}
 					end
 				end
 			else skip
 		end
 	end
 
-	proc {ConsumeNgramAux N S ?Dict}
+	proc {ConsumeNgramAux N S ?Ngram}
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
-					{ConsumeNgramGrams N T "" Dict}
-					{ConsumeNgramAux N T Dict}
+					{ConsumeNgramGrams N T "" Ngram}
+					{ConsumeNgramAux N T Ngram}
 				end
 			else skip
 		end
 	end
 
 	fun {ConsumeNgram N S}
-		Dict = {Dictionary.new}
+		Ngram = {Dictionary.new}
 	in
-		{ConsumeNgramAux N S Dict}
-		Dict
+		{ConsumeNgramAux N S Ngram}
+		Ngram
 	end
 
 	% consume the tweet stream into multiple n-grams
@@ -448,7 +447,6 @@ define
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
 		Files = {GetFiles {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
-		Dict
 	in
 		% Fonction d'exemple qui liste tous les fichiers
 		% contenus dans le dossier passe en Argument.
