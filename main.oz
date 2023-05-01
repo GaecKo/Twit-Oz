@@ -93,6 +93,8 @@ define
 	in
 		if {Dictionary.member Ngram Key} then
 			{Dictionary.get Ngram Key}
+		elseif N == 1 then
+			{Dictionary.new} % XXX Should we make this return the most common word in the whole dataset then?
 		else
 			{ProbsNgramAux N - 1 Tokens TokenCount}
 		end
@@ -703,7 +705,7 @@ define
 			{History set(1: {GetHistory})}
 
 			% On lance les threads de lecture et de parsing
-			
+
 			SeparatedWordsPort = {NewPort SeparatedWordsStream}
 			NbThreads = 4
 
