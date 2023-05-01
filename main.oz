@@ -129,8 +129,15 @@ define
 	% parse tweet into tokens
 	% XXX currently, this is just splitting by space - this should be a bit more involved
 
+	fun {SanitizeTweet Tweet}
+		{List.map Tweet fun {$ C}
+			C
+		end}
+	end
+
 	proc {ParseTweet P Tweet}
-		Tokens = {String.tokens Tweet & }
+		SanitizedTweet = {SanitizeTweet Tweet}
+		Tokens = {String.tokens SanitizedTweet & }
 	in
 		{SendTokens P Tokens}
 	end
