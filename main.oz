@@ -138,7 +138,7 @@ define
 
 	fun {SanitizeTweet Tweet}
 		{List.map Tweet fun {$ C}
-			C
+			{Char.toLower C}
 		end}
 	end
 
