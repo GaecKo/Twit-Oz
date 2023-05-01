@@ -34,6 +34,19 @@ define
 	History
 	% === === == === ===
 
+	% normalize an input string
+	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them
+
+	fun {Sanitize String}
+		{List.map String fun {$ C}
+			if {Char.isAlpha C} == false then
+				(& )
+			else
+				{Char.toLower C}
+			end
+		end}
+	end
+
 	fun {HighestProbAux Keys Probs MaxCount MaxKey}
 		Count
 		NewMaxCount
@@ -62,7 +75,8 @@ define
 	end
 
 	fun {Predict Prompt}
-		Tokens = {String.tokens Prompt & }
+		SanitizedPrompt = {Sanitize Prompt}
+		Tokens = {String.tokens SanitizedPrompt & }
 		TokenCount = {List.length Tokens}
 		Last3 = {List.nth Tokens TokenCount - 2}
 		Last2 = {List.nth Tokens TokenCount - 1}
@@ -136,18 +150,8 @@ define
 	% parse tweet into tokens
 	% XXX currently, this is just splitting by space - this should be a bit more involved
 
-	fun {SanitizeTweet Tweet}
-		{List.map Tweet fun {$ C}
-			if {Char.isAlpha C} == false then
-				(& )
-			else
-				{Char.toLower C}
-			end
-		end}
-	end
-
 	proc {ParseTweet P Tweet}
-		SanitizedTweet = {SanitizeTweet Tweet}
+		SanitizedTweet = {Sanitize Tweet}
 		Tokens = {String.tokens SanitizedTweet & }
 	in
 		{SendTokens P Tokens}
