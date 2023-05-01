@@ -34,18 +34,6 @@ define
 	History
 	% === === == === ===
 
-	% /!\ Fonction testee /!\
-	% @pre: les threads sont "ready"
-	% @post: Fonction appellee lorsqu on appuie sur le bouton de prediction
-	%		  Affiche la prediction la plus probable du prochain mot selon les deux derniers mots entres
-	% @return: Retourne une liste contenant la liste du/des mot(s) le(s) plus probable(s) accompagnee de
-	%			 la probabilite/frequence la plus elevée.
-	%			 La valeur de retour doit prendre la forme:
-	%						<return_val> := <most_probable_words> '|' <probability/frequence> '|' nil
-	%						<most_probable_words> := <atom> '|' <most_probable_words>
-	%														 | nil
-	%						<probability/frequence> := <int> | <float>
-
 	fun {HighestProbAux Keys Probs MaxCount MaxKey}
 		Count
 		NewMaxCount
@@ -83,7 +71,26 @@ define
 	in
 		{HighestProb Probs}
 	end
+	% /!\ Fonction testee /!\
+	% @pre: les threads sont "ready"
+	% @post: Fonction appellee lorsqu on appuie sur le bouton de prediction
+	%		  Affiche la prediction la plus probable du prochain mot selon les deux derniers mots entres
+	% @return: Retourne une liste contenant la liste du/des mot(s) le(s) plus probable(s) accompagnee de
+	%			 la probabilite/frequence la plus elevée.
+	%			 La valeur de retour doit prendre la forme:
+	%
+	%% <return_val>            := <most_probable_words> '|' <probability/frequence> '|' nil
+	%% <most_probable_words>   := <atom> '|' <most_probable_words>
+	%						| nil
+	% 						| <no_word_found>
+	%% <no_word_found>         := nil '|' nil
 
+	%% <probability/frequence> := <int> | <float>
+
+	%% Example:
+	%% * [[cool swag nice] 0.7]
+	%% * [[cool swag nice] 7]
+	%% * [[nil] 0]               # should return [nil] in case of no most probable word found
 	fun {Press}
 		local In Out in
 			{InputText get(1: In)}
