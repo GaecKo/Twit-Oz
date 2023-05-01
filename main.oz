@@ -87,15 +87,24 @@ define
 		{String.toAtom StringKey}
 	end
 
+	fun {ProbsNgramAux N Tokens TokenCount}
+		Key = {BuildNgramKey N Tokens TokenCount}
+		Ngram = {List.nth Ngrams N}
+	in
+		if {Dictionary.member Ngram Key} then
+			{Dictionary.get Ngram Key}
+		else
+			{ProbsNgramAux N - 1 Tokens TokenCount}
+		end
+	end
+
 	fun {ProbsNgram N Prompt}
 		SanitizedPrompt = {Sanitize Prompt}
 		Tokens = {String.tokens SanitizedPrompt & }
 		TokenCount = {List.length Tokens}
 		PossibleN = {Value.min N TokenCount} % we can't query a trigram if we only have 2 tokens
-		Key = {BuildNgramKey PossibleN Tokens TokenCount}
-		Ngram = {List.nth Ngrams PossibleN}
 	in
-		{Dictionary.get Ngram Key}
+		{ProbsNgramAux PossibleN Tokens TokenCount}
 	end
 
 	fun {Predict Prompt}
@@ -104,6 +113,7 @@ define
 	in
 		{HighestProb Probs}
 	end
+
 	% /!\ Fonction testee /!\
 	% @pre: les threads sont "ready"
 	% @post: Fonction appellee lorsqu on appuie sur le bouton de prediction
@@ -124,6 +134,7 @@ define
 	%% * [[cool swag nice] 0.7]
 	%% * [[cool swag nice] 7]
 	%% * [[nil] 0]               # should return [nil] in case of no most probable word found
+
 	fun {Press}
 		local In Out in
 			{InputText get(1: In)}
@@ -237,7 +248,6 @@ define
 
 	% consume the tweet stream into an n-gram
 	% a stream basically acts as a big list
-	% TODO a little idiosyncratic to have Ngram as a return parameter rather than a fun's return value
 	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
 
 	proc {ConsumeNgramGrams N S Key ?Ngram}
