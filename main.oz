@@ -138,7 +138,11 @@ define
 
 	fun {SanitizeTweet Tweet}
 		{List.map Tweet fun {$ C}
-			{Char.toLower C}
+			if {Char.isAlpha C} == false then
+				(& )
+			else
+				{Char.toLower C}
+			end
 		end}
 	end
 
