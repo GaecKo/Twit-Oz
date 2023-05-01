@@ -28,9 +28,7 @@ define
 	InputText
 	OutputText
 	Files
-	Unigram
-	Bigram
-	Trigram
+	Ngrams
 	History
 	% === === == === ===
 
@@ -95,12 +93,14 @@ define
 		TokenCount = {List.length Tokens}
 		PossibleN = {Value.min N TokenCount} % we can't query a trigram if we only have 2 tokens
 		Key = {BuildNgramKey PossibleN Tokens TokenCount}
+		Ngram = {List.nth Ngrams PossibleN}
 	in
-		{Dictionary.get Trigram Key}
+		{Dictionary.get Ngram Key}
 	end
 
 	fun {Predict Prompt}
-		Probs = {ProbsNgram 3 Prompt}
+		MaxN = {List.length Ngrams}
+		Probs = {ProbsNgram MaxN Prompt}
 	in
 		{HighestProb Probs}
 	end
@@ -237,7 +237,8 @@ define
 
 	% consume the tweet stream into an n-gram
 	% a stream basically acts as a big list
-	% TODO find a better name for this than "Dict"
+	% TODO find a better name for this than "Dict" (--> simply Ngram)
+	% TODO a little idiosyncratic to have Dict as a return parameter rather than a fun's return value
 	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
 
 	proc {ConsumeNgramGrams N S Key ?Dict}
@@ -270,6 +271,20 @@ define
 	in
 		{ConsumeNgramAux N S Dict}
 		Dict
+	end
+
+	% consume the tweet stream into multiple n-grams
+
+	fun {ConsumeNgramsAux N TotalN S}
+		if N > TotalN then
+			nil
+		else
+			{ConsumeNgram N S} | {ConsumeNgramsAux N + 1 TotalN S}
+		end
+	end
+
+	fun {ConsumeNgrams N S}
+		{ConsumeNgramsAux 1 N S}
 	end
 
 	% Ajouter vos fonctions et procédures auxiliaires ici
@@ -687,14 +702,8 @@ define
 			{Print "Launch producer threads"}
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
-			{Print "Consume word stream into unigram"}
-			Unigram = {ConsumeNgram 1 SeparatedWordsStream}
-
-			{Print "Consume word stream into bigram"}
-			Bigram = {ConsumeNgram 2 SeparatedWordsStream}
-
-			{Print "Consume word stream into trigram"}
-			Trigram = {ConsumeNgram 3 SeparatedWordsStream}
+			{Print "Consume word stream into n-grams (up to trigram)"}
+			Ngrams = {ConsumeNgrams 3 SeparatedWordsStream}
 
 			{Print "Done"}
 
