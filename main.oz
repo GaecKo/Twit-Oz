@@ -74,14 +74,33 @@ define
 		{HighestProbAux {Dictionary.keys Probs} Probs 0 nil}
 	end
 
-	fun {Predict Prompt}
+	fun {BuildNgramKeyAux I N Tokens TokenCount}
+		if I == N then
+			nil
+		else
+			{BuildNgramKeyAux I + 1 N Tokens TokenCount} # {List.nth Tokens TokenCount - I} # " "
+		end
+	end
+
+	fun {BuildNgramKey N Tokens TokenCount}
+		VirtualStringKey = {BuildNgramKeyAux 0 N Tokens TokenCount}
+		StringKey = {VirtualString.toString VirtualStringKey}
+	in
+		{String.toAtom StringKey}
+	end
+
+	fun {ProbsNgram N Prompt}
 		SanitizedPrompt = {Sanitize Prompt}
 		Tokens = {String.tokens SanitizedPrompt & }
 		TokenCount = {List.length Tokens}
-		Last3 = {List.nth Tokens TokenCount - 2}
-		Last2 = {List.nth Tokens TokenCount - 1}
-		Last1 = {List.nth Tokens TokenCount}
-		Probs = {Dictionary.get Trigram {String.toAtom {VirtualString.toString Last3 # " " # Last2 # " " # Last1 # " "}}}
+		PossibleN = {Value.min N TokenCount} % we can't query a trigram if we only have 2 tokens
+		Key = {BuildNgramKey PossibleN Tokens TokenCount}
+	in
+		{Dictionary.get Trigram Key}
+	end
+
+	fun {Predict Prompt}
+		Probs = {ProbsNgram 3 Prompt}
 	in
 		{HighestProb Probs}
 	end
