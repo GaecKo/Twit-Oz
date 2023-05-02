@@ -109,9 +109,14 @@ define
 		{ProbsNgramAux PossibleN Tokens TokenCount}
 	end
 
-	fun {Predict Prompt}
+	fun {PredictProbs Prompt}
 		MaxN = {List.length Ngrams}
-		Probs = {ProbsNgram MaxN Prompt}
+	in
+		{ProbsNgram MaxN Prompt}
+	end
+
+	fun {Predict Prompt}
+		Probs = {PredictProbs Prompt}
 	in
 		{HighestProb Probs}
 	end
@@ -138,14 +143,22 @@ define
 	%% * [[nil] 0]               # should return [nil] in case of no most probable word found
 
 	fun {Press}
-		local In Out in
-			{InputText get(1: In)}
-			Out = {VirtualString.toString In # " " # {Predict In}}
-			{OutputText set(1: {String.toAtom Out})}
-			{AddHistory In}
-			{RefreshHistory In}
-		end
-		0
+		In Out
+		Probs MaxKey MaxCount
+	in
+		{InputText get(1: In)}
+		Out = {VirtualString.toString In # " " # {Predict In}}
+		{OutputText set(1: {String.toAtom Out})}
+		{AddHistory In}
+		{RefreshHistory In}
+
+		% return
+
+		Probs = {PredictProbs In}
+		MaxKey = {HighestProb Probs}
+		MaxCount = {Dictionary.condGet Probs MaxKey 0}
+
+		[[MaxKey] MaxCount]
 	end
 
 	proc {OnPress ?R}
@@ -713,7 +726,7 @@ define
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
 			{Print "Consume word stream into n-grams (up to trigram)"}
-			Ngrams = {ConsumeNgrams 3 SeparatedWordsStream}
+			Ngrams = {ConsumeNgrams 2 SeparatedWordsStream}
 
 			{Print "Done"}
 
