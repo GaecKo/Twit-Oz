@@ -150,7 +150,7 @@ define
 		{OutputText set(1: {String.toAtom Out})}
 		{AddHistory In}
 		{RefreshHistory In}
-
+		{InputText set(1: Out)}
 		% return
 
 		Probs = {PredictProbs In}
