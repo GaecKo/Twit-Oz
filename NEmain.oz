@@ -92,7 +92,7 @@ define
 	in
 		if {Dictionary.member Ngram Key} then
 			{Dictionary.get Ngram Key}
-		elseif N == 2 then
+		elseif N == 1 then
 			{Dictionary.new} % XXX Should we make this return the most common word in the whole dataset then?
 		else
 			{ProbsNgramAux N - 1 Tokens TokenCount}
@@ -150,7 +150,7 @@ define
 		{OutputText set(1: {String.toAtom Out})}
 		{AddHistory In}
 		{RefreshHistory In}
-
+		{InputText set(1: Out)}
 		% return
 
 		Probs = {PredictProbs In}
@@ -166,7 +166,7 @@ define
 			Entry.1
 		end}
 
-		[MaxKeys MaxCount]
+		0 %s[MaxKeys MaxCount]
 	end
 
 	proc {OnPress ?R}
@@ -203,9 +203,35 @@ define
 	% parse tweet into tokens
 	% XXX currently, this is just splitting by space - this should be a bit more involved
 
+	fun {RemoveNilAux Tokens Acc} % Tokens is a list of words "..."|"..."|nil|"..."|nil -> remove the nil (appart from the last one of course)
+		case Tokens 
+			of nil then Acc
+			[] H|T then
+				if H == nil then 
+					{RemoveNilAux T Acc}
+					
+				else 
+					{RemoveNilAux T {Append Acc [H]}}
+					
+				end
+		end
+	end
+
+	fun {RemoveNil Tokens}
+		case Tokens 
+			of nil then nil 
+			[] H|T then 
+				if H == nil then
+					{RemoveNil T}
+				else 
+					{RemoveNilAux Tokens.2 [Tokens.1]}
+				end
+		end
+	end
+
 	proc {ParseTweet P Tweet}
 		SanitizedTweet = {Sanitize Tweet}
-		Tokens = {String.tokens SanitizedTweet & }
+		Tokens = {RemoveNil {String.tokens SanitizedTweet & }} 
 	in
 		{SendTokens P Tokens}
 	end
@@ -421,59 +447,6 @@ define
 					false
 				end
 		end
-	end
-
-	fun {FindInSequence SequenceList SentenceList Acc Initial}
-		%% Check for Sequence within Sentence:
-		%% [Hello I] [Sir Hello I am happy] -> [Hello I] [Hello I am happy] -> [I] [I am happy] -> [am] added
-		SenLen = {List.length SentenceList}
-		SeqLen = {List.length SequenceList}
-	in
-		local Found Word in
-			if SenLen < (SeqLen + 1) then % if not possible because at end of sentence
-				Acc
-			else
-				if SeqLen == 1 then
-					if {Strcasecmp SequenceList.1 SentenceList.1} == 1 then
-						Word = SentenceList.2.1 % next word found !
-						Found = 1
-					else
-						Word = nil
-						Found = 0
-					end
-				else
-					Word = nil
-					Found = 0
-				end
-	
-				if SeqLen == 0 then
-					if Found == 1 then
-						{FindInSequence Initial SentenceList Word|Acc Initial} % restart search with initial sequence
-					else
-						{FindInSequence Initial SentenceList Acc Initial}
-					end
-	
-				elseif {Strcasecmp SequenceList.1 SentenceList.1} == 1 then
-					if Found == 1 then % add Word to list and continue checking for equivalence with further words in tail of sentence
-						{FindInSequence SequenceList.2 SentenceList.2 Word|Acc Initial}
-					else
-						{FindInSequence SequenceList.2 SentenceList.2 Acc Initial}
-					end
-	
-				else
-					{FindInSequence SequenceList SentenceList.2 Acc Initial} % if no correspondance, continue checking for occurence in tail of sentence, keeping the same sequence list
-				end
-			end
-		end
-	end
-
-	fun {FindinString SequenceString SentenceString}
-		%% Strings is a String: "word1 word2",
-		%% Sentence a List of String: "word1 word2 word3 word4"
-		SentenceList = {String.tokens SentenceString 32} % = Sentence.split(" ")
-		SequenceList = {String.tokens SequenceString 32}
-	in
-		{FindInSequence SequenceList SentenceList nil SequenceList}
 	end
 
 	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
@@ -734,8 +707,8 @@ define
 			{Print "Launch producer threads"}
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
-			{Print "Consume word stream into n-grams (up to trigram)"}
-			Ngrams = {ConsumeNgrams 2 SeparatedWordsStream}
+			{Print "Consume word stream into n-grams"}
+			Ngrams = {ConsumeNgrams 5 SeparatedWordsStream}
 
 			{Print "Done"}
 
