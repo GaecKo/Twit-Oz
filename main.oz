@@ -202,6 +202,7 @@ define
 
 	% parse tweet into tokens
 	% XXX currently, this is just splitting by space - this should be a bit more involved
+	% TODO you need to List.filter out empty strings from Tokens
 
 	proc {ParseTweet P Tweet}
 		SanitizedTweet = {Sanitize Tweet}
