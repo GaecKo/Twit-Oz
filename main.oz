@@ -82,9 +82,8 @@ define
 
 	fun {BuildNgramKey N Tokens TokenCount}
 		VirtualStringKey = {BuildNgramKeyAux 0 N Tokens TokenCount}
-		StringKey = {VirtualString.toString VirtualStringKey}
 	in
-		{String.toAtom StringKey}
+		{VirtualString.toAtom VirtualStringKey}
 	end
 
 	fun {ProbsNgramAux N Tokens TokenCount}
@@ -384,11 +383,11 @@ define
 		end
 	end
 
-	fun {GetFiles L} % L = {OS.getDir TweetsFolder}
+	fun {GetFiles Folder L} % L = {OS.getDir TweetsFolder}
 		% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
 		case L
 			of nil then nil
-			[] H|T then {String.toAtom {Append "tweets/" H}}|{GetFiles T} % gives: 'tweets/fileX.txt'
+			[] H|T then {VirtualString.toAtom Folder # "/" # H }|{GetFiles Folder T} % gives: 'tweets/fileX.txt'
 		end
 	end
 
@@ -471,7 +470,8 @@ define
 	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
-		Files = {GetFiles {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
+		{Print TweetsFolder}
+		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
 	in
 		% Fonction d'exemple qui liste tous les fichiers
 		% contenus dans le dossier passe en Argument.
