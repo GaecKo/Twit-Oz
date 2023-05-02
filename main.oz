@@ -227,8 +227,8 @@ define
 	proc {LaunchProducerThreadsAux Files P N TotalN}
 		if N > 0 then
 			{LaunchProducerThreadsAux Files P N - 1 TotalN}
-			% thread {ReadThread Files {List.length Files} P N TotalN} end
-			{ReadThread Files {List.length Files} P N TotalN}
+			thread {ReadThread Files {List.length Files} P N TotalN} end
+			% {ReadThread Files {List.length Files} P N TotalN}
 		end
 	end
 
