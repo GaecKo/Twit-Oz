@@ -143,7 +143,7 @@ define
 
 	fun {Press}
 		In Out
-		Probs MaxKey MaxCount
+		Probs MaxKey MaxCount Entries MaxEntries MaxKeys
 	in
 		{InputText get(1: In)}
 		Out = {VirtualString.toString In # " " # {Predict In}}
@@ -156,8 +156,17 @@ define
 		Probs = {PredictProbs In}
 		MaxKey = {HighestProb Probs}
 		MaxCount = {Dictionary.condGet Probs MaxKey 0}
+		Entries = {Dictionary.entries Probs}
 
-		[[MaxKey] MaxCount]
+		MaxEntries = {List.filter Entries fun {$ Entry}
+			Entry.2 == MaxCount
+		end}
+
+		MaxKeys = {List.map MaxEntries fun {$ Entry}
+			Entry.1
+		end}
+
+		[MaxKeys MaxCount]
 	end
 
 	proc {OnPress ?R}
