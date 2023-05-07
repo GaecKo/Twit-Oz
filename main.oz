@@ -323,9 +323,9 @@ define
 				elseif MatchedK < K then % insert k-v pair to the right
 					tree(k: MatchedK v: MatchedV MatchedLeft {BTSet MatchedRight K V})
 				else % MatchedK == K, simply replace old value with new one
-					tree(k: K v: V)
+					tree(k: K v: V MatchedLeft MatchedRight)
 				end
-			else nil
+			else T
 		end
 	end
 
@@ -371,7 +371,6 @@ define
 				else
 					[nil nil]
 				end
-			else nil
 		end
 	end
 
@@ -381,9 +380,9 @@ define
 				if Word \= thistokenshouldneverappearinthetweets then
 					local
 						Cur = {ConsumeNgram N T}
-						Ngram = {ConsumeNgramFreqs N T ""}
+						Ngram = {ConsumeNgramFreqs N S ""}
 						Key = Ngram.1
-						Word = Ngram.2
+						Word = Ngram.2.1
 						PrevFreqBT = {BTGet Cur Key}
 					in
 						if PrevFreqBT == nil then % key hasn't yet appeared, create a new frequency BT
@@ -403,9 +402,8 @@ define
 						end
 					end
 				else
-					nil
+					leaf
 				end
-			else nil
 		end
 	end
 
@@ -782,7 +780,7 @@ define
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
 			{Print "Consume word stream into n-grams"}
-			Ngrams = {ConsumeNgrams 2 SeparatedWordsStream}
+			Ngrams = {ConsumeNgrams 1 SeparatedWordsStream}
 
 			{Browse Ngrams}
 
