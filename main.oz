@@ -151,32 +151,36 @@ define
 		{AddHistory In}
 		{RefreshHistory In}
 		{InputText set(1: Out)}
-		% return
 
 		Probs = {PredictProbs In}
-		MaxKey = {HighestProb Probs}
 
-		if {Value.hasFeature Probs MaxKey} then
-			MaxCount = Probs.MaxKey
+		if Probs == nil then
+			[[nil] 0]
 		else
-			MaxCount = 0
+			MaxKey = {HighestProb Probs}
+
+			if {Value.hasFeature Probs MaxKey} then
+				MaxCount = Probs.MaxKey
+			else
+				MaxCount = 0
+			end
+
+			Entries = {Dictionary.entries {Record.toDictionary Probs}}
+
+			MaxEntries = {List.filter Entries fun {$ Entry}
+				Entry.2 == MaxCount
+			end}
+
+			MaxKeys = {List.map MaxEntries fun {$ Entry}
+				Entry.1
+			end}
+
+			[MaxKeys MaxCount]
 		end
-
-		Entries = {Dictionary.entries {Record.toDictionary Probs}}
-
-		MaxEntries = {List.filter Entries fun {$ Entry}
-			Entry.2 == MaxCount
-		end}
-
-		MaxKeys = {List.map MaxEntries fun {$ Entry}
-			Entry.1
-		end}
-
-		0 %s[MaxKeys MaxCount]
 	end
 
-	proc {OnPress ?R}
-		R = {Press}
+	proc {OnPress}
+		_ = {Press}
 	end
 
 	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
@@ -262,6 +266,7 @@ define
 	in
 		{F close}
 		{ParseTweets P Tweets}
+		{Print Name}
 	end
 
 	% read each file this thread is supposed to read in the Files list
@@ -491,232 +496,229 @@ define
 			% TODO
 
 			% Creation de l'interface graphique
-			% R will store {Press} result
 
-			local R in
-				Description=td(
-					title: "GPT-OZ 4"
+			Description=td(
+				title: "GPT-OZ 4"
+				background: c(42 43 45)
+
+				lr(
 					background: c(42 43 45)
 
-					lr(
+					td(
 						background: c(42 43 45)
-
-						td(
+						glue: nw
+						padx: 50
+						0: label(
+							text: "History"
+							foreground: white
+							glue: nwe
+							pady: 10
 							background: c(42 43 45)
-							glue: nw
-							padx: 50
-							0: label(
-								text: "History"
-								foreground: white
-								glue: nwe
-								pady: 10
-								background: c(42 43 45)
-							)
-							1: {GetHistoryLabel}
 						)
-
-						td(
-							height: 300
-							width: 400
-							background: c(52 53 65)
-							padx: 10
-							% pady:30
-							
-							label(
-								text: "GPT-OZ 4"
-								foreground: white
-								glue: nswe
-								pady: 10
-								background: c(52 53 65)
-							)
-
-							lr( % three columns
-								width: 300
-								height: 100
-								background: c(52 53 65)
-
-								td(
-									glue:wns
-									background: c(52 53 65)
-									padx:10
-
-									label(
-										text: "Examples"
-										foreground: white
-										background: c(52 53 65)
-										pady: 5
-										glue: nwe
-									)
-
-									label(
-										text: "Tesla is ...\nshareholders'\nvictory."
-										foreground: white
-										background: c(64 65 79)
-										pady:5
-										glue: nwe
-									)
-
-									label(
-										text: "I am ...\nclose\npoverty."
-										foreground: white
-										background: c(64 65 79)
-										pady:5
-										glue: nwe
-									)
-
-									label(
-										text: "I should...\nresell Twitter."
-										foreground: white
-										background: c(64 65 79)
-										pady:5
-										glue: nwe
-									)
-								)
-
-								td(
-									glue:wns
-									background: c(52 53 65)
-									padx:10
-
-									label(
-										text: "Possibilities"
-										foreground: white
-										background: c(52 53 65)
-										pady: 5
-										glue: nwe
-									)
-
-									label(
-										text: "Get automatic\nTweets"
-										foreground: white
-										background: c(64 65 79)
-										pady: 5
-										glue: nwe
-									)
-
-									label(
-										text: "2-grammes\nprediction\nbased"
-										foreground: white
-										background: c(64 65 79)
-										pady: 5
-										glue: nwe
-									)
-
-									label(
-										text: "Easy and\ncomplete\ntweets"
-										foreground: white
-										background: c(64 65 79)
-										pady: 5
-										glue: nwe
-									)
-								)
-
-								td(
-									glue:wns
-									background: c(52 53 65)
-									padx:10
-
-									1: label(
-										text: "Limitations"
-										foreground: white
-										background: c(52 53 65)
-										pady: 5
-										glue: nwe
-									)
-
-									2: label(
-										text: "Elon Musk\ntweetosphere"
-										foreground: white
-										background: c(64 65 79)
-										pady: 8
-										glue: nwe
-									)
-
-									3: label(
-										text: "Maximum \nresponse\nof 100 words"
-										foreground: white
-										background: c(64 65 79)
-										pady: 8
-										glue: nwe
-									)
-
-									4: label(
-										text: "Oz slowness\n& bugs"
-										foreground: white
-										background: c(64 65 79)
-										pady: 8
-										glue: nwe
-									)
-								)
-							)
-
-							text(
-								handle: OutputText
-								width: 100
-								height: 10
-								background: c(52 53 65)
-								highlightthickness:0
-								foreground: white
-								glue: nswe
-								wrap: word
-								borderwidth: 0
-							)
-
-							text(
-								glue: nswe
-								handle: InputText
-								width: 100
-								height: 5
-								background: c(64 65 79)
-								borderwidth: 2
-								foreground: white
-								wrap: word
-							)
-							
-							button(
-								text: "PREDICT"
-								relief: groove
-								foreground: c(52 53 65)
-								background: white
-								width: 10
-								glue: s
-								action: proc {$}
-									{OnPress R}
-								end
-							)
-
-							label(
-								text: "@GPT-OZ 4 is under MIT license & still in development.\nNo warranty of work is given and it should be used at your own risk."
-								foreground: white
-								glue: swe
-								pady: 20
-								background: c(52 53 65)
-							)						
-						)			
+						1: {GetHistoryLabel}
 					)
 
-					% quit program when window is closed
+					td(
+						height: 300
+						width: 400
+						background: c(52 53 65)
+						padx: 10
+						% pady:30
 
-					action: proc {$}
-						{Application.exit 0}
-					end
+						label(
+							text: "GPT-OZ 4"
+							foreground: white
+							glue: nswe
+							pady: 10
+							background: c(52 53 65)
+						)
+
+						lr( % three columns
+							width: 300
+							height: 100
+							background: c(52 53 65)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								label(
+									text: "Examples"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Tesla is ...\nshareholders'\nvictory."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe
+								)
+
+								label(
+									text: "I am ...\nclose\npoverty."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe
+								)
+
+								label(
+									text: "I should...\nresell Twitter."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe
+								)
+							)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								label(
+									text: "Possibilities"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Get automatic\nTweets"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "2-grammes\nprediction\nbased"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Easy and\ncomplete\ntweets"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe
+								)
+							)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								1: label(
+									text: "Limitations"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								2: label(
+									text: "Elon Musk\ntweetosphere"
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe
+								)
+
+								3: label(
+									text: "Maximum \nresponse\nof 100 words"
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe
+								)
+
+								4: label(
+									text: "Oz slowness\n& bugs"
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe
+								)
+							)
+						)
+
+						text(
+							handle: OutputText
+							width: 100
+							height: 10
+							background: c(52 53 65)
+							highlightthickness:0
+							foreground: white
+							glue: nswe
+							wrap: word
+							borderwidth: 0
+						)
+
+						text(
+							glue: nswe
+							handle: InputText
+							width: 100
+							height: 5
+							background: c(64 65 79)
+							borderwidth: 2
+							foreground: white
+							wrap: word
+						)
+
+						button(
+							text: "PREDICT"
+							relief: groove
+							foreground: c(52 53 65)
+							background: white
+							width: 10
+							glue: s
+							action: proc {$}
+								{OnPress}
+							end
+						)
+
+						label(
+							text: "@GPT-OZ 4 is under MIT license & still in development.\nNo warranty of work is given and it should be used at your own risk."
+							foreground: white
+							glue: swe
+							pady: 20
+							background: c(52 53 65)
+						)
+					)
 				)
 
-				% window creation
+				% quit program when window is closed
 
-				Window = {QTk.build Description}
-				{Window show}
+				action: proc {$}
+					{Application.exit 0}
+				end
+			)
 
-				{InputText tk(insert 'end' "Loading... Please wait.")}
+			% window creation
 
-				{InputText bind(
-					event: "<Control-s>"
-					action: proc {$}
-						{OnPress R}
-					end
-				)}
-			end
-		
+			Window = {QTk.build Description}
+			{Window show}
+
+			{InputText tk(insert 'end' "Loading... Please wait.")}
+
+			{InputText bind(
+				event: "<Control-s>"
+				action: proc {$}
+					{OnPress}
+				end
+			)}
+
 			{History set(1: {GetHistory})}
 
 			% On lance les threads de lecture et de parsing
@@ -728,7 +730,7 @@ define
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
 			{Print "Consume word stream into n-grams"}
-			Ngrams = {ConsumeNgrams 1 SeparatedWordsStream}
+			Ngrams = {ConsumeNgrams 2 SeparatedWordsStream}
 
 			{Print "Done"}
 
