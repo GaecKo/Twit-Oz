@@ -306,36 +306,32 @@ define
 	% consume the tweet stream into an n-gram (ConsumeNgram)
 	% a stream basically acts as a big list
 	% go through all the words in that stream (ConsumeNgramAux)
-	% for each one of those words, process the next N words (ConsumeNgramGrams)
+	% for each one of those words, process the next N words (ConsumeNgramFreqs)
 	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
 
-	fun {ConsumeNgramGrams N S Key Freqs}
+	fun {ConsumeNgramFreqs N S Key}
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
 					if N == 0 then % reached the end of the N words we had to process, previous words are the key, next word is the value
-						local
-							Cur = {AddToNgram Key Word Ngram}
-						in
-							{Record.adjoinAt Ngram Key Freqs} % ummmm no this is wrong
-						end
+						freqs(Key: Word)
 					else
-						{ConsumeNgramGrams N - 1 T Key # Word # " " Ngram}
+						{ConsumeNgramFreqs N - 1 T Key # Word # " " Ngram}
 					end
 				end
 			else skip
 		end
 	end
 
-	fun {ConsumeNgramAux N S Ngram}
+	fun {ConsumeNgramAux N S}
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
 					local
-						Cur = {ConsumeNgramAux N T Ngram}
-						Freqs = {ConsumeNgramsGrams N T "" Ngram}
+						Cur = {ConsumeNgramAux N T}
+						Freqs = {ConsumeNgramFreqs N T ""}
 					in
-						{Record.adjoinAt Ngram Cur Freqs}
+						{CombineFreqs Cur Freqs}
 					end
 				end
 			else skip
