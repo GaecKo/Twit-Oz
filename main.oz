@@ -322,24 +322,18 @@ define
 		end
 	end
 
-	fun {ConsumeNgramAux N S} % returns full ngram record
+	fun {ConsumeNgram N S} % returns full ngram record
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
 					local
-						Cur = {ConsumeNgramAux N T}
+						Cur = {ConsumeNgram N T}
 						Ngram = {ConsumeNgramFreqs N T ""}
 					in
 						{CombineNgrams Cur Ngram}
 					end
 				end
 		end
-	end
-
-	fun {ConsumeNgram N S}
-		Ngram = ngram()
-	in
-		{ConsumeNgramAux N S Ngram}
 	end
 
 	% consume the tweet stream into multiple n-grams
