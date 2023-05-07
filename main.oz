@@ -283,16 +283,24 @@ define
 		{LaunchProducerThreadsAux Files P N N}
 	end
 
-	% add word to dictionnary
-	% TODO explain this all better
+	% combine two frequency records together
+	% e.g. {CombineFreqs a(lorem: 4 ipsum: 3) b(dolor: 2 ipsum: 4)} -> c(lorem: 4 ipsum: 7 dolor: 2)
 
-	proc {AddToNgram Word Next ?Ngram}
-		WordAtom = {String.toAtom {VirtualString.toString Word}}
-		Counts = {Dictionary.condGet Ngram WordAtom {Dictionary.new}}
-		NextCount = {Dictionary.condGet Counts Next 0}
+	fun {CombineFreqs F1 F2}
+		Sums = {Record.zip F1 F2 fun {$ Count1 Count2}
+			Count1 + Count2
+		end}
 	in
-		{Dictionary.put Counts Next NextCount + 1}
-		{Dictionary.put Ngram WordAtom Counts}
+		{Record.adjoin F2 {Record.adjoin F1 Sums}} % second record has priority over first one!
+	end
+
+	% combine two n-gram records together
+	% TODO can I optimize this by only adjoining on one side?
+
+	fun {CombineNgrams N1 N2}
+		Sums = {Record.zip N1 N2 CombineFreqs}
+	in
+		{Record.adjoin N2 {Record.adjoin N1 Sums}} % second record has priority over first one!
 	end
 
 	% consume the tweet stream into an n-gram (ConsumeNgram)
@@ -301,7 +309,7 @@ define
 	% for each one of those words, process the next N words (ConsumeNgramGrams)
 	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
 
-	fun {ConsumeNgramGrams N S Key Ngram}
+	fun {ConsumeNgramGrams N S Key Freqs}
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
@@ -309,7 +317,7 @@ define
 						local
 							Cur = {AddToNgram Key Word Ngram}
 						in
-							{Record.adjoinAt Ngram Key Word} % ummmm no this is wrong
+							{Record.adjoinAt Ngram Key Freqs} % ummmm no this is wrong
 						end
 					else
 						{ConsumeNgramGrams N - 1 T Key # Word # " " Ngram}
@@ -325,9 +333,9 @@ define
 				if Word \= thistokenshouldneverappearinthetweets then
 					local
 						Cur = {ConsumeNgramAux N T Ngram}
-						Rest = {ConsumeNgramsGrams N T "" Ngram}
+						Freqs = {ConsumeNgramsGrams N T "" Ngram}
 					in
-						{Record.adjoin Cur Rest}
+						{Record.adjoinAt Ngram Cur Freqs}
 					end
 				end
 			else skip
