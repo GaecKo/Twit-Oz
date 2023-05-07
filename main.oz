@@ -401,21 +401,26 @@ define
 						Key = Ngram.1
 						Word = Ngram.2.1
 						PrevFreqBT = {BTGet Cur Key}
+						{Browse [yo1 Key PrevFreqBT Word]}
 					in
-						if PrevFreqBT == nil then % key hasn't yet appeared, create a new frequency BT
-							{BTSet Cur Key tree(k: Word v: 1 leaf leaf)}
-						else % key has already appeared, add to previous frequency BT
-							local
-								PrevFreq = {BTGet PrevFreqBT Word}
-								FreqBT
-							in
-								if PrevFreq == nil then % word hasn't yet appeared in frequency BT, start at 1
-									FreqBT = {BTSet PrevFreqBT Word 1}
-								else
-									FreqBT = {BTSet PrevFreqBT Word {BTGet PrevFreqBT Word} + 1}
+						if Key \= nil then
+							if PrevFreqBT == nil then % key hasn't yet appeared, create a new frequency BT
+								{BTSet Cur Key tree(k: Word v: 1 leaf leaf)}
+							else % key has already appeared, add to previous frequency BT
+								local
+									PrevFreq = {BTGet PrevFreqBT Word}
+									FreqBT
+								in
+									if PrevFreq == nil then % word hasn't yet appeared in frequency BT, start at 1
+										FreqBT = {BTSet PrevFreqBT Word 1}
+									else
+										FreqBT = {BTSet PrevFreqBT Word PrevFreq + 1}
+									end
+									{BTSet Cur Key FreqBT}
 								end
-								{BTSet Cur Key FreqBT}
 							end
+						else
+							Cur
 						end
 					end
 				else
