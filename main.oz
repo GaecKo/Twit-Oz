@@ -309,37 +309,35 @@ define
 	% for each one of those words, process the next N words (ConsumeNgramFreqs)
 	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
 
-	fun {ConsumeNgramFreqs N S Key}
+	fun {ConsumeNgramFreqs N S Key} % returns partial ngram record
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
 					if N == 0 then % reached the end of the N words we had to process, previous words are the key, next word is the value
-						freqs(Key: Word)
+						ngram(Key: freqs(Word: 1))
 					else
-						{ConsumeNgramFreqs N - 1 T Key # Word # " " Ngram}
+						{ConsumeNgramFreqs N - 1 T Key # Word # " "}
 					end
 				end
-			else skip
 		end
 	end
 
-	fun {ConsumeNgramAux N S}
+	fun {ConsumeNgramAux N S} % returns full ngram record
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
 					local
 						Cur = {ConsumeNgramAux N T}
-						Freqs = {ConsumeNgramFreqs N T ""}
+						Ngram = {ConsumeNgramFreqs N T ""}
 					in
-						{CombineFreqs Cur Freqs}
+						{CombineNgrams Cur Ngram}
 					end
 				end
-			else skip
 		end
 	end
 
 	fun {ConsumeNgram N S}
-		Ngram = ngram(n: 0)
+		Ngram = ngram()
 	in
 		{ConsumeNgramAux N S Ngram}
 	end
