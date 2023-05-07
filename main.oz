@@ -632,7 +632,7 @@ define
 								)
 
 								label(
-									text: "I am ...\nclose\npoverty."
+									text: "I am ...\nclose to\npoverty."
 									foreground: white
 									background: c(64 65 79)
 									pady:5
@@ -670,7 +670,7 @@ define
 								)
 
 								label(
-									text: "2-grammes\nprediction\nbased"
+									text: "N-Grams\nprediction\nbased"
 									foreground: white
 									background: c(64 65 79)
 									pady: 5
@@ -708,7 +708,7 @@ define
 								)
 
 								3: label(
-									text: "Maximum \nresponse\nof 100 words"
+									text: "May produce \nweird \noutput "
 									foreground: white
 									background: c(64 65 79)
 									pady: 8
@@ -716,7 +716,7 @@ define
 								)
 
 								4: label(
-									text: "Oz slowness\n& bugs"
+									text: "Declarative\nOz only "
 									foreground: white
 									background: c(64 65 79)
 									pady: 8
