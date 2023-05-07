@@ -52,7 +52,7 @@ define
 	in
 		case Keys
 			of H | T then
-				Count = {Dictionary.get Probs H}
+				Count = Probs.H
 
 				if Count > MaxCount then
 					NewMaxKey = H
@@ -69,7 +69,7 @@ define
 	end
 
 	fun {HighestProb Probs}
-		{HighestProbAux {Dictionary.keys Probs} Probs 0 nil}
+		{HighestProbAux {Record.arity Probs} Probs 0 nil}
 	end
 
 	fun {BuildNgramKeyAux I N Tokens TokenCount}
@@ -90,10 +90,10 @@ define
 		Key = {BuildNgramKey N Tokens TokenCount}
 		Ngram = {List.nth Ngrams N}
 	in
-		if {Dictionary.member Ngram Key} then
-			{Dictionary.get Ngram Key}
+		if {Value.hasFeature Ngram Key} then
+			Ngram.Key
 		elseif N == 1 then
-			{Dictionary.new} % XXX Should we make this return the most common word in the whole dataset then?
+			nil % XXX Should we make this return the most common word in the whole dataset then?
 		else
 			{ProbsNgramAux N - 1 Tokens TokenCount}
 		end
@@ -155,8 +155,14 @@ define
 
 		Probs = {PredictProbs In}
 		MaxKey = {HighestProb Probs}
-		MaxCount = {Dictionary.condGet Probs MaxKey 0}
-		Entries = {Dictionary.entries Probs}
+
+		if {Value.hasFeature Probs MaxKey} then
+			MaxCount = Probs.MaxKey
+		else
+			MaxCount = 0
+		end
+
+		Entries = {Dictionary.entries {Record.toDictionary Probs}}
 
 		MaxEntries = {List.filter Entries fun {$ Entry}
 			Entry.2 == MaxCount
@@ -723,7 +729,6 @@ define
 
 			{Print "Consume word stream into n-grams"}
 			Ngrams = {ConsumeNgrams 1 SeparatedWordsStream}
-			% {Browse Ngrams}
 
 			{Print "Done"}
 
