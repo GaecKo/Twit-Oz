@@ -294,6 +294,24 @@ define
 		{LaunchProducerThreadsAux Files P N N}
 	end
 
+	% binary tree operations
+	% TODO should we change the names of these record keys? could this improve performance?
+
+	fun {Insert K V T}
+		case T
+			of leaf then % if we've arrived at a leaf, create a new tree
+				tree(k: K v: V leaf leaf)
+			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
+				if MatchedK > K then % insert k-v pair to the left
+					tree(k: MatchedK v: MatchedV {Insert K V MatchedLeft} MatchedRight)
+				elseif MatchedK < K then % insert k-v pair to the right
+					tree(k: MatchedK v: MatchedV MatchedLeft {Insert K V MatchedRight})
+				else % MatchedK == K, simply replace old value with new one
+					tree(k: K v: V)
+				end
+		end
+	end
+
 	% combine two frequency records together
 	% e.g. {CombineFreqs a(lorem: 4 ipsum: 3) b(dolor: 2 ipsum: 4)} -> c(lorem: 4 ipsum: 7 dolor: 2)
 
