@@ -319,6 +319,7 @@ define
 						{ConsumeNgramFreqs N - 1 T Key # Word # " "}
 					end
 				end
+			else nil
 		end
 	end
 
@@ -332,7 +333,10 @@ define
 					in
 						{CombineNgrams Cur Ngram}
 					end
+				else
+					nil
 				end
+			else nil
 		end
 	end
 
