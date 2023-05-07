@@ -309,6 +309,7 @@ define
 				else % MatchedK == K, found key
 					MatchedV
 				end
+			else nil
 		end
 	end
 
@@ -324,6 +325,7 @@ define
 				else % MatchedK == K, simply replace old value with new one
 					tree(k: K v: V)
 				end
+			else nil
 		end
 	end
 
@@ -361,13 +363,13 @@ define
 						local
 							KeyAtom = {VirtualString.toAtom Key}
 						in
-							ngram(KeyAtom: freqs(Word: 1))
+							[KeyAtom Word]
 						end
 					else
 						{ConsumeNgramFreqs N - 1 T Key # Word # " "}
 					end
 				else
-					ngram()
+					[nil nil]
 				end
 			else nil
 		end
@@ -380,11 +382,28 @@ define
 					local
 						Cur = {ConsumeNgram N T}
 						Ngram = {ConsumeNgramFreqs N T ""}
+						Key = Ngram.1
+						Word = Ngram.2
+						PrevFreqBT = {BTGet Cur Key}
 					in
-						{CombineNgrams Cur Ngram}
+						if PrevFreqBT == nil then % key hasn't yet appeared, create a new frequency BT
+							{BTSet Cur Key tree(k: Word v: 1 leaf leaf)}
+						else % key has already appeared, add to previous frequency BT
+							local
+								PrevFreq = {BTGet PrevFreqBT Word}
+								FreqBT
+							in
+								if PrevFreq == nil then % word hasn't yet appeared in frequency BT, start at 1
+									FreqBT = {BTSet PrevFreqBT Word 1}
+								else
+									FreqBT = {BTSet PrevFreqBT Word {BTGet PrevFreqBT Word} + 1}
+								end
+								{BTSet Cur Key FreqBT}
+							end
+						end
 					end
 				else
-					ngram()
+					nil
 				end
 			else nil
 		end
@@ -764,6 +783,8 @@ define
 
 			{Print "Consume word stream into n-grams"}
 			Ngrams = {ConsumeNgrams 2 SeparatedWordsStream}
+
+			{Browse Ngrams}
 
 			{Print "Done"}
 
