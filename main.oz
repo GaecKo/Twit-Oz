@@ -295,17 +295,32 @@ define
 	end
 
 	% binary tree operations
-	% TODO should we change the names of these record keys? could this improve performance?
+	% TODO should we change the names of these record keys (features)? could this improve performance?
 
-	fun {Insert K V T}
+	fun {BTGet T K}
+		case T
+			of leaf then % if we've arrived at a leaf, key is not in tree
+				nil
+			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
+				if MatchedK > K then % key is to the left
+					{BTGet MatchedLeft K}
+				elseif MatchedK < K then % key is to the right
+					{BTGet MatchedRight K}
+				else % MatchedK == K, found key
+					MatchedV
+				end
+		end
+	end
+
+	fun {BTSet T K V}
 		case T
 			of leaf then % if we've arrived at a leaf, create a new tree
 				tree(k: K v: V leaf leaf)
 			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
 				if MatchedK > K then % insert k-v pair to the left
-					tree(k: MatchedK v: MatchedV {Insert K V MatchedLeft} MatchedRight)
+					tree(k: MatchedK v: MatchedV {BTSet MatchedLeft K V} MatchedRight)
 				elseif MatchedK < K then % insert k-v pair to the right
-					tree(k: MatchedK v: MatchedV MatchedLeft {Insert K V MatchedRight})
+					tree(k: MatchedK v: MatchedV MatchedLeft {BTSet MatchedRight K V})
 				else % MatchedK == K, simply replace old value with new one
 					tree(k: K v: V)
 				end
