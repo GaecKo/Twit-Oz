@@ -93,12 +93,14 @@ define
 					MaxCountLeft = MaxLeft.2.1
 					MaxCountRight = MaxRight.2.1
 				in
-					if MaxCountLeft < MaxCount then
+					if MaxCountLeft > MaxCount andthen MaxCountLeft > MaxCountRight andthen MaxCountLeft > Freq then
 						[MaxKeyLeft MaxCountLeft]
-					elseif MaxCountRight < MaxCount then
+					elseif MaxCountRight > MaxCount andthen MaxCountRight > Freq then
 						[MaxKeyRight MaxCountRight]
-					else
+					elseif Freq > MaxCount then
 						[Word Freq]
+					else
+						[MaxKey MaxCount]
 					end
 				end
 			else [MaxKey MaxCount]
