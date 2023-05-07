@@ -274,8 +274,8 @@ define
 	proc {LaunchProducerThreadsAux Files P N TotalN}
 		if N > 0 then
 			{LaunchProducerThreadsAux Files P N - 1 TotalN}
-			thread {ReadThread Files {List.length Files} P N TotalN} end
-			% {ReadThread Files {List.length Files} P N TotalN}
+			% thread {ReadThread Files {List.length Files} P N TotalN} end
+			{ReadThread Files {List.length Files} P N TotalN}
 		end
 	end
 
@@ -314,10 +314,16 @@ define
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
 					if N == 0 then % reached the end of the N words we had to process, previous words are the key, next word is the value
-						ngram(Key: freqs(Word: 1))
+						local
+							KeyAtom = {VirtualString.toAtom Key}
+						in
+							ngram(KeyAtom: freqs(Word: 1))
+						end
 					else
 						{ConsumeNgramFreqs N - 1 T Key # Word # " "}
 					end
+				else
+					ngram()
 				end
 			else nil
 		end
@@ -334,7 +340,7 @@ define
 						{CombineNgrams Cur Ngram}
 					end
 				else
-					nil
+					ngram()
 				end
 			else nil
 		end
@@ -461,7 +467,6 @@ define
 	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
-		{Print TweetsFolder}
 		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
 	in
 		% Fonction d'exemple qui liste tous les fichiers
@@ -717,7 +722,8 @@ define
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
 			{Print "Consume word stream into n-grams"}
-			Ngrams = {ConsumeNgrams 3 SeparatedWordsStream}
+			Ngrams = {ConsumeNgrams 1 SeparatedWordsStream}
+			% {Browse Ngrams}
 
 			{Print "Done"}
 
