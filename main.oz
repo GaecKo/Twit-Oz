@@ -295,16 +295,22 @@ define
 		{Dictionary.put Ngram WordAtom Counts}
 	end
 
-	% consume the tweet stream into an n-gram
+	% consume the tweet stream into an n-gram (ConsumeNgram)
 	% a stream basically acts as a big list
+	% go through all the words in that stream (ConsumeNgramAux)
+	% for each one of those words, process the next N words (ConsumeNgramGrams)
 	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
 
-	proc {ConsumeNgramGrams N S Key ?Ngram}
+	fun {ConsumeNgramGrams N S Key Ngram}
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
-					if N == 0 then
-						{AddToNgram Key Word Ngram}
+					if N == 0 then % reached the end of the N words we had to process, previous words are the key, next word is the value
+						local
+							Cur = {AddToNgram Key Word Ngram}
+						in
+							{Record.adjoinAt Ngram Key Word} % ummmm no this is wrong
+						end
 					else
 						{ConsumeNgramGrams N - 1 T Key # Word # " " Ngram}
 					end
@@ -313,22 +319,25 @@ define
 		end
 	end
 
-	proc {ConsumeNgramAux N S ?Ngram}
+	fun {ConsumeNgramAux N S Ngram}
 		case S
 			of Word | T then
 				if Word \= thistokenshouldneverappearinthetweets then
-					{ConsumeNgramGrams N T "" Ngram}
-					{ConsumeNgramAux N T Ngram}
+					local
+						Cur = {ConsumeNgramAux N T Ngram}
+						Rest = {ConsumeNgramsGrams N T "" Ngram}
+					in
+						{Record.adjoin Cur Rest}
+					end
 				end
 			else skip
 		end
 	end
 
 	fun {ConsumeNgram N S}
-		Ngram = {Dictionary.new}
+		Ngram = ngram(n: 0)
 	in
 		{ConsumeNgramAux N S Ngram}
-		Ngram
 	end
 
 	% consume the tweet stream into multiple n-grams
@@ -708,7 +717,7 @@ define
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
 			{Print "Consume word stream into n-grams"}
-			Ngrams = {ConsumeNgrams 5 SeparatedWordsStream}
+			Ngrams = {ConsumeNgrams 3 SeparatedWordsStream}
 
 			{Print "Done"}
 
