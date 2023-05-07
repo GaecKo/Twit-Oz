@@ -32,6 +32,41 @@ define
 	History
 	% === === == === ===
 
+	% binary tree operations
+	% TODO should we change the names of these record keys (features)? could this improve performance?
+
+	fun {BTGet T K}
+		case T
+			of leaf then % if we've arrived at a leaf, key is not in tree
+				nil
+			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
+				if MatchedK > K then % key is to the left
+					{BTGet MatchedLeft K}
+				elseif MatchedK < K then % key is to the right
+					{BTGet MatchedRight K}
+				else % MatchedK == K, found key
+					MatchedV
+				end
+			else nil
+		end
+	end
+
+	fun {BTSet T K V}
+		case T
+			of leaf then % if we've arrived at a leaf, create a new tree
+				tree(k: K v: V leaf leaf)
+			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
+				if MatchedK > K then % insert k-v pair to the left
+					tree(k: MatchedK v: MatchedV {BTSet MatchedLeft K V} MatchedRight)
+				elseif MatchedK < K then % insert k-v pair to the right
+					tree(k: MatchedK v: MatchedV MatchedLeft {BTSet MatchedRight K V})
+				else % MatchedK == K, simply replace old value with new one
+					tree(k: K v: V MatchedLeft MatchedRight)
+				end
+			else T
+		end
+	end
+
 	% normalize an input string
 	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them
 
@@ -45,31 +80,35 @@ define
 		end}
 	end
 
-	fun {HighestProbAux Keys Probs MaxCount MaxKey}
-		Count
-		NewMaxCount
-		NewMaxKey
-	in
-		case Keys
-			of H | T then
-				Count = Probs.H
+	fun {HighestProbAux Probs MaxCount MaxKey}
+		case Probs
+			of leaf then % if we've arrived at a leaf, key is not in tree
+				[MaxKey MaxCount]
+			[] tree(k: Word v: Freq MatchedLeft MatchedRight) then
+				local
+					MaxLeft = {HighestProbAux MatchedLeft MaxCount MaxKey}
+					MaxRight = {HighestProbAux MatchedRight MaxCount MaxKey}
 
-				if Count > MaxCount then
-					NewMaxKey = H
-					NewMaxCount = Count
-				else
-					NewMaxKey = MaxKey
-					NewMaxCount = MaxCount
+					MaxKeyLeft = MaxLeft.1
+					MaxKeyRight = MaxRight.1
+
+					MaxCountLeft = MaxLeft.2.1
+					MaxCountRight = MaxRight.2.1
+				in
+					if MaxCountLeft > MaxCount then
+						[MaxKeyLeft MaxCountLeft]
+					elseif MaxCountRight > MaxCount then
+						[MaxKeyRight MaxCountRight]
+					else
+						[Word Freq]
+					end
 				end
-
-				{HighestProbAux T Probs NewMaxCount NewMaxKey}
-			[] nil then
-				MaxKey
+			else [MaxKey MaxCount]
 		end
 	end
 
 	fun {HighestProb Probs}
-		{HighestProbAux {Record.arity Probs} Probs 0 nil}
+		{HighestProbAux Probs 0 nil} % counts always be like: > 0
 	end
 
 	fun {BuildNgramKeyAux I N Tokens TokenCount}
@@ -89,9 +128,10 @@ define
 	fun {ProbsNgramAux N Tokens TokenCount}
 		Key = {BuildNgramKey N Tokens TokenCount}
 		Ngram = {List.nth Ngrams N}
+		Probs = {BTGet Ngram Key}
 	in
-		if {Value.hasFeature Ngram Key} then
-			Ngram.Key
+		if Probs \= nil then
+			Probs
 		elseif N == 1 then
 			nil % XXX Should we make this return the most common word in the whole dataset then?
 		else
@@ -117,7 +157,7 @@ define
 	fun {Predict Prompt}
 		Probs = {PredictProbs Prompt}
 	in
-		{HighestProb Probs}
+		{HighestProb Probs}.1
 	end
 
 	% /!\ Fonction testee /!\
@@ -152,31 +192,33 @@ define
 		{RefreshHistory In}
 		{InputText set(1: Out)}
 
-		Probs = {PredictProbs In}
+		0
 
-		if Probs == nil then
-			[[nil] 0]
-		else
-			MaxKey = {HighestProb Probs}
+		% Probs = {PredictProbs In}
 
-			if {Value.hasFeature Probs MaxKey} then
-				MaxCount = Probs.MaxKey
-			else
-				MaxCount = 0
-			end
+		% if Probs == nil then
+		% 	[[nil] 0]
+		% else
+		% 	MaxKey = {HighestProb Probs}
 
-			Entries = {Dictionary.entries {Record.toDictionary Probs}}
+		% 	if {Value.hasFeature Probs MaxKey} then
+		% 		MaxCount = Probs.MaxKey
+		% 	else
+		% 		MaxCount = 0
+		% 	end
 
-			MaxEntries = {List.filter Entries fun {$ Entry}
-				Entry.2 == MaxCount
-			end}
+		% 	Entries = {Dictionary.entries {Record.toDictionary Probs}}
 
-			MaxKeys = {List.map MaxEntries fun {$ Entry}
-				Entry.1
-			end}
+		% 	MaxEntries = {List.filter Entries fun {$ Entry}
+		% 		Entry.2 == MaxCount
+		% 	end}
 
-			[MaxKeys MaxCount]
-		end
+		% 	MaxKeys = {List.map MaxEntries fun {$ Entry}
+		% 		Entry.1
+		% 	end}
+
+		% 	[MaxKeys MaxCount]
+		% end
 	end
 
 	proc {OnPress}
@@ -292,41 +334,6 @@ define
 
 	proc {LaunchProducerThreads Files P N}
 		{LaunchProducerThreadsAux Files P N N}
-	end
-
-	% binary tree operations
-	% TODO should we change the names of these record keys (features)? could this improve performance?
-
-	fun {BTGet T K}
-		case T
-			of leaf then % if we've arrived at a leaf, key is not in tree
-				nil
-			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
-				if MatchedK > K then % key is to the left
-					{BTGet MatchedLeft K}
-				elseif MatchedK < K then % key is to the right
-					{BTGet MatchedRight K}
-				else % MatchedK == K, found key
-					MatchedV
-				end
-			else nil
-		end
-	end
-
-	fun {BTSet T K V}
-		case T
-			of leaf then % if we've arrived at a leaf, create a new tree
-				tree(k: K v: V leaf leaf)
-			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
-				if MatchedK > K then % insert k-v pair to the left
-					tree(k: MatchedK v: MatchedV {BTSet MatchedLeft K V} MatchedRight)
-				elseif MatchedK < K then % insert k-v pair to the right
-					tree(k: MatchedK v: MatchedV MatchedLeft {BTSet MatchedRight K V})
-				else % MatchedK == K, simply replace old value with new one
-					tree(k: K v: V MatchedLeft MatchedRight)
-				end
-			else T
-		end
 	end
 
 	% combine two frequency records together
@@ -781,8 +788,6 @@ define
 
 			{Print "Consume word stream into n-grams"}
 			Ngrams = {ConsumeNgrams 1 SeparatedWordsStream}
-
-			{Browse Ngrams}
 
 			{Print "Done"}
 
