@@ -95,12 +95,14 @@ define
 					MaxCountLeft = MaxLeft.2.1
 					MaxCountRight = MaxRight.2.1
 				in
-					if MaxCountLeft < MaxCount then
+					if MaxCountLeft > MaxCount andthen MaxCountLeft > MaxCountRight andthen MaxCountLeft > Freq then
 						[MaxKeyLeft MaxCountLeft]
-					elseif MaxCountRight < MaxCount then
+					elseif MaxCountRight > MaxCount andthen MaxCountRight > Freq then
 						[MaxKeyRight MaxCountRight]
-					else
+					elseif Freq > MaxCount then
 						[Word Freq]
+					else
+						[MaxKey MaxCount]
 					end
 				end
 			else [MaxKey MaxCount]
@@ -401,7 +403,6 @@ define
 						Key = Ngram.1
 						Word = Ngram.2.1
 						PrevFreqBT = {BTGet Cur Key}
-						{Browse [yo1 Key PrevFreqBT Word]}
 					in
 						if Key \= nil then
 							if PrevFreqBT == nil then % key hasn't yet appeared, create a new frequency BT
