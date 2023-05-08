@@ -227,8 +227,12 @@ define
 
 	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
 	
-	fun {GetFileContent FileName}
-		F = {New TextFile init(name: FileName flags: [read])}
+	fun {GetFileContent F}
+		Content
+	in 
+		{F read(list: Content size: all)}
+		Content
+	end
 		
 	fun {GetFileLinesAux F Acc}
 		Tweet = {F getS($)}
@@ -263,9 +267,12 @@ define
 			of nil then Acc
 			[] H|T then
 				if H == nil then 
-					{RemoveNilAux T Acc}
+					{RemoveNilAux T Acc} 
 					
-				else 
+				elseif H == "amp" then
+					{RemoveNilAux T Acc}
+
+				else
 					{RemoveNilAux T {Append Acc [H]}}
 					
 				end
@@ -284,22 +291,12 @@ define
 		end
 	end
 
-	proc {ParseTweet P Tweet}
-		SanitizedTweet = {Sanitize Tweet}
+	% Parse Tweets (whole content of a file)
+	proc {ParseTweets P Tweets}
+		SanitizedTweet = {Sanitize Tweets}
 		Tokens = {RemoveNil {String.tokens SanitizedTweet & }} 
 	in
 		{SendTokens P Tokens}
-	end
-
-	% go through a list of tweets and parse them
-
-	proc {ParseTweets P Tweets}
-		case Tweets
-			of H | T then % TODO check if this is TCO-able in Oz
-				{ParseTweet P H}
-				{ParseTweets P T}
-			[] nil then skip
-		end
 	end
 
 	% read a given part file
@@ -307,7 +304,7 @@ define
 
 	proc {ReadPart P Name}
 		F = {New TextFile init(name: Name flags: [read])}
-		Tweets = {GetFileLines F}
+		Tweets = {GetFileContent F}
 	in
 		{F close}
 		{ParseTweets P Tweets}
