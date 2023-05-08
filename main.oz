@@ -198,71 +198,50 @@ define
 		end
 	end 
 
-	% /!\ Fonction testee /!\
-	% @pre: les threads sont "ready"
-	% @post: Fonction appellee lorsqu on appuie sur le bouton de prediction
-	%		  Affiche la prediction la plus probable du prochain mot selon les deux derniers mots entres
-	% @return: Retourne une liste contenant la liste du/des mot(s) le(s) plus probable(s) accompagnee de
-	%			 la probabilite/frequence la plus elevée.
-	%			 La valeur de retour doit prendre la forme:
-	%
-	%% <return_val>            := <most_probable_words> '|' <probability/frequence> '|' nil
-	%% <most_probable_words>   := <atom> '|' <most_probable_words>
-	%						| nil
-	% 						| <no_word_found>
-	%% <no_word_found>         := nil '|' nil
+	fun {Press}
+		In Out InToUse Return LastTwo
+		Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
+	in
+		{InputText get(1: In)}
 
-	%% <probability/frequence> := <int> | <float>
+		case In
+			of nil then
+				Return = [[nil] 0]
+			[] H|T then
+				Return = nil
+				if {List.length {String.tokens In & }} > 2 then
+					LastTwo = {FindLastTwo {String.tokens In & }}
+					InToUse = {VirtualString.toString LastTwo.1 # " " # LastTwo.2.1}
 
-	%% Example:
-	%% * [[cool swag nice] 0.7]
-	%% * [[cool swag nice] 7]
-	%% * [[nil] 0]               # should return [nil] in case of no most probable word found
-
-		fun {Press}
-			In Out InToUse Return LastTwo
-			Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
-		in
-			{InputText get(1: In)}
-	
-			case In
-				of nil then
+				elseif {List.length {String.tokens In & }} == 1 then
 					Return = [[nil] 0]
-				[] H|T then
-					Return = nil
-					if {List.length {String.tokens In & }} > 2 then
-						LastTwo = {FindLastTwo {String.tokens In & }}
-						InToUse = {VirtualString.toString LastTwo.1 # " " # LastTwo.2.1}
-
-					elseif {List.length {String.tokens In & }} == 1 then
-						Return = [[nil] 0]
-					else 
-						InToUse = In
-					end
-			end
-	
-			if Return \= nil then
-				Return
-			else
-				Out = {VirtualString.toString In # " " # {Predict InToUse}}
-				{OutputText set(1: {String.toAtom Out})}
-				{Print InToUse}
-				% return
-	
-				Probs = {PredictProbs InToUse}
-
-				if Probs == nil then
-					[[nil] 0]
 				else
-					Highest = {HighestProb Probs}
+					InToUse = In
+				end
+		end
 
-					MaxKey = Highest.1
-					MaxCount = Highest.2.1
+		if Return \= nil then
+			Return
+		else
+			Out = {VirtualString.toString In # " " # {Predict InToUse}}
+			{OutputText set(1: {String.toAtom Out})}
+			{Print InToUse}
+			% return
 
-					MaxKeys = {KeysWithProb Probs MaxCount}
+			Probs = {PredictProbs InToUse}
 
-					{Browse [MaxKeys MaxCount]}
-					[MaxKeys MaxCount]
+			if Probs == nil then
+				[[nil] 0]
+			else
+				Highest = {HighestProb Probs}
+
+				MaxKey = Highest.1
+				MaxCount = Highest.2.1
+
+				MaxKeys = {KeysWithProb Probs MaxCount}
+
+				{Browse [MaxKeys MaxCount]}
+				[MaxKeys MaxCount]
 			end
 		end
 	end
@@ -489,7 +468,6 @@ define
 		Args.'folder'
 	end
 
-	% Decomnentez moi si besoin
 	proc {ListAllFiles L}
 		case L of nil then skip
 		[] H|T then {Print {String.toAtom H}} {ListAllFiles T}
@@ -498,6 +476,7 @@ define
 
 	fun {GetFiles Folder L} % L = {OS.getDir TweetsFolder}
 		% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
+
 		case L
 			of nil then nil
 			[] H|T then {VirtualString.toAtom Folder # "/" # H }|{GetFiles Folder T} % gives: 'tweets/fileX.txt'
@@ -527,33 +506,25 @@ define
 		end
 	end
 
-	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
-		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
+		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}}
 	in
-		% Fonction d'exemple qui liste tous les fichiers
-		% contenus dans le dossier passe en Argument.
-		% Inspirez vous en pour lire le contenu des fichiers
-		% se trouvant dans le dossier
-		% N'appelez PAS cette fonction lors de la phase de
-		% soumission !!!
-
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
 				width: 1000
 				depth: 1000
 			)}
 
-			% TODO
-
 			% Creation de l'interface graphique
+
 			Description=td(
-					title: "Text predictor"
-					lr(text(handle:InputText width:50 height:10 background:white foreground:black wrap:word) button(text:"Predict" width:15 action: proc {$} {OnPress} end))
-					text(handle:OutputText width:50 height:10 background:black foreground:white glue:w wrap:word)
-					action:proc{$}{Application.exit 0} end % quitte le programme quand la fenetre est fermee
-						)
+				title: "Text predictor"
+				lr(text(handle:InputText width:50 height:10 background:white foreground:black wrap:word) button(text:"Predict" width:15 action: proc {$} {OnPress} end))
+				text(handle:OutputText width:50 height:10 background:black foreground:white glue:w wrap:word)
+				action:proc{$}{Application.exit 0} end % quitte le programme quand la fenetre est fermee
+			)
+
 			Window = {QTk.build Description}
 			{Window show}
 
