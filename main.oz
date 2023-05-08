@@ -111,6 +111,28 @@ define
 		{HighestProbAux Probs 0 nil} % counts always be like: > 0
 	end
 
+	fun {KeysWithProbAux Probs Prob}
+		Appended
+	in
+		case Probs
+			of leaf then % if we've arrived at a leaf, key is not in tree
+				nil
+			[] tree(k: Word v: Freq MatchedLeft MatchedRight) then
+				Appended = {List.append {KeysWithProbAux MatchedLeft Prob} {KeysWithProbAux MatchedRight Prob}}
+
+				if Freq == Prob then
+					Word | Appended
+				else
+					Appended
+				end
+			else nil
+		end
+	end
+
+	fun {KeysWithProb Probs Prob}
+		{KeysWithProbAux Probs Prob}
+	end
+
 	fun {BuildNgramKeyAux I N Tokens TokenCount}
 		if I == N then
 			nil
@@ -183,7 +205,7 @@ define
 
 	fun {Press}
 		In Out
-		Probs MaxKey MaxCount Entries MaxEntries MaxKeys
+		Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
 	in
 		{InputText get(1: In)}
 		Out = {VirtualString.toString In # " " # {Predict In}}
@@ -192,33 +214,21 @@ define
 		{RefreshHistory In}
 		{InputText set(1: Out)}
 
-		0
+		Probs = {PredictProbs In}
 
-		% Probs = {PredictProbs In}
+		if Probs == nil then
+			[[nil] 0]
+		else
+			Highest = {HighestProb Probs}
 
-		% if Probs == nil then
-		% 	[[nil] 0]
-		% else
-		% 	MaxKey = {HighestProb Probs}
+			MaxKey = Highest.1
+			MaxCount = Highest.2.1
 
-		% 	if {Value.hasFeature Probs MaxKey} then
-		% 		MaxCount = Probs.MaxKey
-		% 	else
-		% 		MaxCount = 0
-		% 	end
+			MaxKeys = {KeysWithProb Probs MaxCount}
 
-		% 	Entries = {Dictionary.entries {Record.toDictionary Probs}}
-
-		% 	MaxEntries = {List.filter Entries fun {$ Entry}
-		% 		Entry.2 == MaxCount
-		% 	end}
-
-		% 	MaxKeys = {List.map MaxEntries fun {$ Entry}
-		% 		Entry.1
-		% 	end}
-
-		% 	[MaxKeys MaxCount]
-		% end
+			{Browse [MaxKeys MaxCount]}
+			[MaxKeys MaxCount]
+		end
 	end
 
 	proc {OnPress}
@@ -391,21 +401,26 @@ define
 						Key = Ngram.1
 						Word = Ngram.2.1
 						PrevFreqBT = {BTGet Cur Key}
+						{Browse [yo1 Key PrevFreqBT Word]}
 					in
-						if PrevFreqBT == nil then % key hasn't yet appeared, create a new frequency BT
-							{BTSet Cur Key tree(k: Word v: 1 leaf leaf)}
-						else % key has already appeared, add to previous frequency BT
-							local
-								PrevFreq = {BTGet PrevFreqBT Word}
-								FreqBT
-							in
-								if PrevFreq == nil then % word hasn't yet appeared in frequency BT, start at 1
-									FreqBT = {BTSet PrevFreqBT Word 1}
-								else
-									FreqBT = {BTSet PrevFreqBT Word {BTGet PrevFreqBT Word} + 1}
+						if Key \= nil then
+							if PrevFreqBT == nil then % key hasn't yet appeared, create a new frequency BT
+								{BTSet Cur Key tree(k: Word v: 1 leaf leaf)}
+							else % key has already appeared, add to previous frequency BT
+								local
+									PrevFreq = {BTGet PrevFreqBT Word}
+									FreqBT
+								in
+									if PrevFreq == nil then % word hasn't yet appeared in frequency BT, start at 1
+										FreqBT = {BTSet PrevFreqBT Word 1}
+									else
+										FreqBT = {BTSet PrevFreqBT Word PrevFreq + 1}
+									end
+									{BTSet Cur Key FreqBT}
 								end
-								{BTSet Cur Key FreqBT}
 							end
+						else
+							Cur
 						end
 					end
 				else
