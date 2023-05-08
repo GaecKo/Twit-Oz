@@ -759,7 +759,7 @@ define
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
 			{Print "Consume word stream into n-grams"}
-			Ngrams = {ConsumeNgrams 2 SeparatedWordsStream}
+			Ngrams = {ConsumeNgrams 3 SeparatedWordsStream}
 
 			{Print "Done"}
 
