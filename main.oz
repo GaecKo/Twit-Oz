@@ -226,7 +226,10 @@ define
 	end
 
 	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
-
+	
+	fun {GetFileContent FileName}
+		F = {New TextFile init(name: FileName flags: [read])}
+		
 	fun {GetFileLinesAux F Acc}
 		Tweet = {F getS($)}
 	in
