@@ -184,27 +184,6 @@ define
 		{HighestProb Probs}.1
 	end
 
-	% /!\ Fonction testee /!\
-	% @pre: les threads sont "ready"
-	% @post: Fonction appellee lorsqu on appuie sur le bouton de prediction
-	%		  Affiche la prediction la plus probable du prochain mot selon les deux derniers mots entres
-	% @return: Retourne une liste contenant la liste du/des mot(s) le(s) plus probable(s) accompagnee de
-	%			 la probabilite/frequence la plus elevée.
-	%			 La valeur de retour doit prendre la forme:
-	%
-	%% <return_val>            := <most_probable_words> '|' <probability/frequence> '|' nil
-	%% <most_probable_words>   := <atom> '|' <most_probable_words>
-	%						| nil
-	% 						| <no_word_found>
-	%% <no_word_found>         := nil '|' nil
-
-	%% <probability/frequence> := <int> | <float>
-
-	%% Example:
-	%% * [[cool swag nice] 0.7]
-	%% * [[cool swag nice] 7]
-	%% * [[nil] 0]               # should return [nil] in case of no most probable word found
-
 	fun {Press}
 		In Out
 		Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
@@ -510,7 +489,6 @@ define
 		Args.'folder'
 	end
 
-	% Decomnentez moi si besoin
 	proc {ListAllFiles L}
 		case L of nil then skip
 		[] H|T then {Print {String.toAtom H}} {ListAllFiles T}
@@ -519,6 +497,7 @@ define
 
 	fun {GetFiles Folder L} % L = {OS.getDir TweetsFolder}
 		% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
+
 		case L
 			of nil then nil
 			[] H|T then {VirtualString.toAtom Folder # "/" # H }|{GetFiles Folder T} % gives: 'tweets/fileX.txt'
@@ -548,237 +527,24 @@ define
 		end
 	end
 
-	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
-		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
+		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}}
 	in
-		% Fonction d'exemple qui liste tous les fichiers
-		% contenus dans le dossier passe en Argument.
-		% Inspirez vous en pour lire le contenu des fichiers
-		% se trouvant dans le dossier
-		% N'appelez PAS cette fonction lors de la phase de
-		% soumission !!!
-
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
 				width: 1000
 				depth: 1000
 			)}
 
-			% TODO
-
 			% Creation de l'interface graphique
 
 			Description=td(
-				title: "GPT-OZ 4"
-				background: c(42 43 45)
-
-				lr(
-					background: c(42 43 45)
-
-					td(
-						background: c(42 43 45)
-						glue: nw
-						padx: 50
-						0: label(
-							text: "History"
-							foreground: white
-							glue: nwe
-							pady: 10
-							background: c(42 43 45)
-						)
-						1: {GetHistoryLabel}
-					)
-
-					td(
-						height: 300
-						width: 400
-						background: c(52 53 65)
-						padx: 10
-						% pady:30
-
-						label(
-							text: "GPT-OZ 4"
-							foreground: white
-							glue: nswe
-							pady: 10
-							background: c(52 53 65)
-						)
-
-						lr( % three columns
-							width: 300
-							height: 100
-							background: c(52 53 65)
-
-							td(
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								label(
-									text: "Examples"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Tesla is ...\nshareholders'\nvictory."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-
-								label(
-									text: "I am ...\nclose to\npoverty."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-
-								label(
-									text: "I should...\nresell Twitter."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-							)
-
-							td(
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								label(
-									text: "Possibilities"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Get automatic\nTweets"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "N-Grams\nprediction\nbased"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Easy and\ncomplete\ntweets"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-							)
-
-							td(
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								1: label(
-									text: "Limitations"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								2: label(
-									text: "Elon Musk\ntweetosphere"
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-
-								3: label(
-									text: "May produce \nweird \noutput "
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-
-								4: label(
-									text: "Declarative\nOz only "
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-							)
-						)
-
-						text(
-							handle: OutputText
-							width: 100
-							height: 10
-							background: c(52 53 65)
-							highlightthickness:0
-							foreground: white
-							glue: nswe
-							wrap: word
-							borderwidth: 0
-						)
-
-						text(
-							glue: nswe
-							handle: InputText
-							width: 100
-							height: 5
-							background: c(64 65 79)
-							borderwidth: 2
-							foreground: white
-							wrap: word
-						)
-
-						button(
-							text: "PREDICT"
-							relief: groove
-							foreground: c(52 53 65)
-							background: white
-							width: 10
-							glue: s
-							action: proc {$}
-								{OnPress}
-							end
-						)
-
-						label(
-							text: "@GPT-OZ 4 is under MIT license & still in development.\nNo warranty of work is given and it should be used at your own risk."
-							foreground: white
-							glue: swe
-							pady: 20
-							background: c(52 53 65)
-						)
-					)
-				)
-
-				% quit program when window is closed
-
-				action: proc {$}
-					{Application.exit 0}
-				end
+				title: "Text predictor"
+				lr(text(handle:InputText width:50 height:10 background:white foreground:black wrap:word) button(text:"Predict" width:15 action: proc {$} {OnPress} end))
+				text(handle:OutputText width:50 height:10 background:black foreground:white glue:w wrap:word)
+				action:proc{$}{Application.exit 0} end % quitte le programme quand la fenetre est fermee
 			)
-
-			% window creation
 
 			Window = {QTk.build Description}
 			{Window show}
