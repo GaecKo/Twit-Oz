@@ -27,12 +27,10 @@ define
 	OutputText
 	Files
 	Ngrams
-	History
 	% === === == === ===
 
 	% binary tree operations
 	% TODO should we change the names of these record keys (features)? could this improve performance?
-
 	fun {BTGet T K}
 		case T
 			of leaf then % if we've arrived at a leaf, key is not in tree
@@ -69,13 +67,25 @@ define
 	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them
 
 	fun {Sanitize String}
-		{List.map String fun {$ C}
-			if {Char.isAlpha C} == false then
-				(& )
-			else
-				{Char.toLower C}
-			end
-		end}
+		case String
+			of nil then 
+				nil
+			
+			[] H|T then
+				if H >= 97 andthen H =< 122 then 
+					H|{Sanitize T} % minuscule
+
+				elseif H >= 65 andthen H =< 90 then 
+					{Char.toLower H}|{Sanitize T} % majuscule
+
+				elseif H >= 48 andthen H =< 57 then 
+					H|{Sanitize T} % chiffre
+
+				else 
+					32|{Sanitize T} % autre
+				
+				end
+		end
 	end
 
 	fun {HighestProbAux Probs MaxCount MaxKey}
@@ -154,7 +164,7 @@ define
 	in
 		if Probs \= nil then
 			Probs
-		elseif N == 1 then
+		elseif N == 2 then
 			nil % XXX Should we make this return the most common word in the whole dataset then?
 		else
 			{ProbsNgramAux N - 1 Tokens TokenCount}
@@ -182,32 +192,67 @@ define
 		{HighestProb Probs}.1
 	end
 
+	fun {FindLastTwo L}
+		{FindLastTwoAux L.2 L.1}
+	end
+
+	fun {FindLastTwoAux Tail Previous}
+		case Tail
+			of nil then nil
+			[] H|T then
+				if T == nil then
+					[Previous H]
+				else
+					{FindLastTwoAux T H}
+				end
+		end
+	end 
+
 	fun {Press}
-		In Out
+		In Out InToUse Return LastTwo
 		Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
 	in
 		{InputText get(1: In)}
-		Out = {VirtualString.toString In # " " # {Predict In}}
-		{OutputText set(1: {String.toAtom Out})}
-		{InputText set(1: Out)} % set Input to Output so quicker for next prediction
 
-		{AddHistory In} % History management
-		{RefreshHistory In}
+		case In
+			of nil then
+				Return = [[nil] 0]
+			[] H|T then
+				Return = nil
+				if {List.length {String.tokens In & }} > 2 then
+					LastTwo = {FindLastTwo {String.tokens In & }}
+					InToUse = {VirtualString.toString LastTwo.1 # " " # LastTwo.2.1}
 
-		Probs = {PredictProbs In}
+				elseif {List.length {String.tokens In & }} == 1 then
+					Return = [[nil] 0]
+				else
+					InToUse = In
+				end
+		end
 
-		if Probs == nil then
-			[[nil] 0]
+		if Return \= nil then
+			Return
 		else
-			Highest = {HighestProb Probs}
+			Out = {VirtualString.toString In # " " # {Predict InToUse}}
+			{OutputText set(1: {String.toAtom Out})}
+			{Print InToUse}
+			% return
 
-			MaxKey = Highest.1
-			MaxCount = Highest.2.1
+			Probs = {PredictProbs InToUse}
 
-			MaxKeys = {KeysWithProb Probs MaxCount}
+			if Probs == nil then
+				[[nil] 0]
+			else
+				Highest = {HighestProb Probs}
 
-			{Browse [MaxKeys MaxCount]}
-			[MaxKeys MaxCount]
+				MaxKey = Highest.1
+				MaxCount = Highest.2.1
+
+				MaxKeys = {KeysWithProb Probs MaxCount}
+
+				{Browse [MaxKeys MaxCount]}
+				[MaxKeys MaxCount]
+			end
 		end
 	end
 
@@ -423,60 +468,6 @@ define
 		{ConsumeNgramsAux 1 N S}
 	end
 
-	% Ajouter vos fonctions et procédures auxiliaires ici
-
-	proc {RefreshHistory NewH}
-		Current
-	in
-		{History get(
-					1: Current
-				)}
-
-		{History set(
-					1: {VirtualString.toString NewH # "\n" # Current}
-				)}
-	end
-
-	fun {GetHistory}
-		% line1\nline2...
-		F = {New TextFile init(name: 'history.txt' flags: [read])}
-		Content
-		NewContent
-	in
-		%% TODO: replace \n with \n + ... + \n
-		{F read(list: Content size: all)}
-		Content 
-	end
-
-	proc {AddHistory Input}
-		% Append to history Input|Output\n
-		F = {New TextFile init(name: 'history.txt' flags: [read write])}
-		WDesc
-	in
-		% XXX can't do this for the moment - cf. https://github.com/mozart/mozart2/pull/345
-		% {F seek(whence: 'end' offset: 0)}
-
-		{F getDesc(WDesc _)}
-		{OS.lSeek WDesc 'SEEK_END' 0 _}
-
-		{F putS(Input)}
-		{F close}
-	end
-
-	fun {GetHistoryLabel}
-		text(
-			handle: History
-			width: 20
-			foreground: white
-			background: c(52 53 65)
-			pady: 5
-			glue: nwe
-		)
-	end
-
-	% Fetch Tweets Folder from CLI Arguments
-	% See the Makefile for an example of how it is called
-
 	fun {GetSentenceFolder}
 		Args = {Application.getArgs record(
 			'folder'(
@@ -531,222 +522,20 @@ define
 		TweetsFolder = {GetSentenceFolder}
 		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}}
 	in
-
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
 				width: 1000
 				depth: 1000
 			)}
 
-			% GUI:
+			% Creation de l'interface graphique
+
 			Description=td(
-				title: "GPT-OZ 4"
-				background: c(42 43 45)
-
-				lr(
-					background: c(42 43 45)
-
-					td(
-						background: c(42 43 45)
-						glue: nw
-						padx: 50
-						0: label(
-							text: "History"
-							foreground: white
-							glue: nwe
-							pady: 10
-							background: c(42 43 45)
-						)
-						1: {GetHistoryLabel}
-					)
-
-					td(
-						height: 300
-						width: 400
-						background: c(52 53 65)
-						padx: 10
-
-						label(
-							text: "GPT-OZ 4"
-							foreground: white
-							glue: nswe
-							pady: 10
-							background: c(52 53 65)
-						)
-
-						lr( % three columns
-							width: 300
-							height: 100
-							background: c(52 53 65)
-
-							td( % EXAMPLES COLUMN
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								label(
-									text: "Examples"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Tesla is ...\nshareholders'\nvictory."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-
-								label(
-									text: "I am ...\nclose to\npoverty."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-
-								label(
-									text: "I should...\nresell Twitter."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-							)
-
-							td( % POSSIBILITIES COLUMN
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								label(
-									text: "Possibilities"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Get automatic\nTweets"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "N-Grams\nprediction\nbased"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Easy and\ncomplete\ntweets"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-							)
-
-							td( % LIMITATIONS COLUMN
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								1: label(
-									text: "Limitations"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								2: label(
-									text: "Elon Musk\ntweetosphere"
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-
-								3: label(
-									text: "May produce \nweird \noutput "
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-
-								4: label(
-									text: "Declarative\nOz only "
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-							)
-						)
-
-						text(
-							handle: OutputText
-							width: 100
-							height: 10
-							background: c(52 53 65)
-							highlightthickness:0
-							foreground: white
-							glue: nswe
-							wrap: word
-							borderwidth: 0
-						)
-
-						text(
-							glue: nswe
-							handle: InputText
-							width: 100
-							height: 5
-							background: c(64 65 79)
-							borderwidth: 2
-							foreground: white
-							wrap: word
-						)
-
-						button(
-							text: "PREDICT"
-							relief: groove
-							foreground: c(52 53 65)
-							background: white
-							width: 10
-							glue: s
-							action: proc {$}
-								{OnPress}
-							end
-						)
-
-						label(
-							text: "@GPT-OZ 4 is under MIT license & still in development.\nNo warranty of work is given and it should be used at your own risk."
-							foreground: white
-							glue: swe
-							pady: 20
-							background: c(52 53 65)
-						)
-					)
-				)
-
-				% quit program when window is closed
-
-				action: proc {$}
-					{Application.exit 0}
-				end
+				title: "Text predictor"
+				lr(text(handle:InputText width:50 height:10 background:white foreground:black wrap:word) button(text:"Predict" width:15 action: proc {$} {OnPress} end))
+				text(handle:OutputText width:50 height:10 background:black foreground:white glue:w wrap:word)
+				action:proc{$}{Application.exit 0} end % quitte le programme quand la fenetre est fermee
 			)
-
-			% window creation
 
 			Window = {QTk.build Description}
 			{Window show}
@@ -759,8 +548,6 @@ define
 					{OnPress}
 				end
 			)}
-
-			{History set(1: {GetHistory})}
 
 			% On lance les threads de lecture et de parsing
 
@@ -779,6 +566,8 @@ define
 				1: ""
 			)}
 		end
+
+		%%ENDOFCODE%%
 	end
 
 	% call main procedure
