@@ -74,21 +74,21 @@ define
 				nil
 			
 			[] H|T then
-		   		if H >= 97 andthen H =< 122 then 
+				if H >= 97 andthen H =< 122 then 
 					H|{Sanitize T} % minuscule
 
-		   		elseif H >= 65 andthen H =< 90 then 
+				elseif H >= 65 andthen H =< 90 then 
 					{Char.toLower H}|{Sanitize T} % majuscule
 
-		   		elseif H >= 48 andthen H =< 57 then 
+				elseif H >= 48 andthen H =< 57 then 
 					H|{Sanitize T} % chiffre
 
-		   		else 
+				else 
 					32|{Sanitize T} % autre
-		   		
+				
 				end
 		end
-	 end
+	end
 
 	fun {HighestProbAux Probs MaxCount MaxKey}
 		case Probs
@@ -166,7 +166,7 @@ define
 	in
 		if Probs \= nil then
 			Probs
-		elseif N == 1 then
+		elseif N == 2 then
 			nil % XXX Should we make this return the most common word in the whole dataset then?
 		else
 			{ProbsNgramAux N - 1 Tokens TokenCount}
