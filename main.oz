@@ -352,7 +352,6 @@ define
 	in
 		{F close}
 		{ParseTweets P Tweets}
-		{Print Name}
 	end
 
 	% read each file this thread is supposed to read in the Files list
