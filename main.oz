@@ -540,11 +540,214 @@ define
 			% Creation de l'interface graphique
 
 			Description=td(
-				title: "Text predictor"
-				lr(text(handle:InputText width:50 height:10 background:white foreground:black wrap:word) button(text:"Predict" width:15 action: proc {$} {OnPress} end))
-				text(handle:OutputText width:50 height:10 background:black foreground:white glue:w wrap:word)
-				action:proc{$}{Application.exit 0} end % quitte le programme quand la fenetre est fermee
+				title: "GPT-OZ 4"
+				background: c(42 43 45)
+
+				lr(
+					background: c(42 43 45)
+
+					td(
+						background: c(42 43 45)
+						glue: nw
+						padx: 50
+						0: label(
+							text: "History"
+							foreground: white
+							glue: nwe
+							pady: 10
+							background: c(42 43 45)
+						)
+						1: {GetHistoryLabel}
+					)
+
+					td(
+						height: 300
+						width: 400
+						background: c(52 53 65)
+						padx: 10
+						% pady:30
+
+						label(
+							text: "GPT-OZ 4"
+							foreground: white
+							glue: nswe
+							pady: 10
+							background: c(52 53 65)
+						)
+
+						lr( % three columns
+							width: 300
+							height: 100
+							background: c(52 53 65)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								label(
+									text: "Examples"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Tesla is ...\nshareholders'\nvictory."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe
+								)
+
+								label(
+									text: "I am ...\nclose to\npoverty."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe
+								)
+
+								label(
+									text: "I should...\nresell Twitter."
+									foreground: white
+									background: c(64 65 79)
+									pady:5
+									glue: nwe
+								)
+							)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								label(
+									text: "Possibilities"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Get automatic\nTweets"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "N-Grams\nprediction\nbased"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe
+								)
+
+								label(
+									text: "Easy and\ncomplete\ntweets"
+									foreground: white
+									background: c(64 65 79)
+									pady: 5
+									glue: nwe
+								)
+							)
+
+							td(
+								glue:wns
+								background: c(52 53 65)
+								padx:10
+
+								1: label(
+									text: "Limitations"
+									foreground: white
+									background: c(52 53 65)
+									pady: 5
+									glue: nwe
+								)
+
+								2: label(
+									text: "Elon Musk\ntweetosphere"
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe
+								)
+
+								3: label(
+									text: "May produce \nweird \noutput "
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe
+								)
+
+								4: label(
+									text: "Declarative\nOz only "
+									foreground: white
+									background: c(64 65 79)
+									pady: 8
+									glue: nwe
+								)
+							)
+						)
+
+						text(
+							handle: OutputText
+							width: 100
+							height: 10
+							background: c(52 53 65)
+							highlightthickness:0
+							foreground: white
+							glue: nswe
+							wrap: word
+							borderwidth: 0
+						)
+
+						text(
+							glue: nswe
+							handle: InputText
+							width: 100
+							height: 5
+							background: c(64 65 79)
+							borderwidth: 2
+							foreground: white
+							wrap: word
+						)
+
+						button(
+							text: "PREDICT"
+							relief: groove
+							foreground: c(52 53 65)
+							background: white
+							width: 10
+							glue: s
+							action: proc {$}
+								{OnPress}
+							end
+						)
+
+						label(
+							text: "@GPT-OZ 4 is under MIT license & still in development.\nNo warranty of work is given and it should be used at your own risk."
+							foreground: white
+							glue: swe
+							pady: 20
+							background: c(52 53 65)
+						)
+					)
+				)
+
+				% quit program when window is closed
+
+				action: proc {$}
+					{Application.exit 0}
+				end
 			)
+
+			% window creation
 
 			Window = {QTk.build Description}
 			{Window show}
