@@ -69,14 +69,26 @@ define
 	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them
 
 	fun {Sanitize String}
-		{List.map String fun {$ C}
-			if {Char.isAlpha C} == false then
-				(& )
-			else
-				{Char.toLower C}
-			end
-		end}
-	end
+		case String
+			of nil then 
+				nil
+			
+			[] H|T then
+		   		if H >= 97 andthen H =< 122 then 
+					H|{Sanitize T} % minuscule
+
+		   		elseif H >= 65 andthen H =< 90 then 
+					{Char.toLower H}|{Sanitize T} % majuscule
+
+		   		elseif H >= 48 andthen H =< 57 then 
+					H|{Sanitize T} % chiffre
+
+		   		else 
+					32|{Sanitize T} % autre
+		   		
+				end
+		end
+	 end
 
 	fun {HighestProbAux Probs MaxCount MaxKey}
 		case Probs
