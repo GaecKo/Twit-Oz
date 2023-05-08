@@ -95,9 +95,9 @@ define
 					MaxCountLeft = MaxLeft.2.1
 					MaxCountRight = MaxRight.2.1
 				in
-					if MaxCountLeft > MaxCount then
+					if MaxCountLeft < MaxCount then
 						[MaxKeyLeft MaxCountLeft]
-					elseif MaxCountRight > MaxCount then
+					elseif MaxCountRight < MaxCount then
 						[MaxKeyRight MaxCountRight]
 					else
 						[Word Freq]
@@ -790,7 +790,7 @@ define
 			{LaunchProducerThreads Files SeparatedWordsPort NbThreads}
 
 			{Print "Consume word stream into n-grams"}
-			Ngrams = {ConsumeNgrams 1 SeparatedWordsStream}
+			Ngrams = {ConsumeNgrams 2 SeparatedWordsStream}
 
 			{Print "Done"}
 
