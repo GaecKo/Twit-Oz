@@ -1,5 +1,3 @@
-% vim: nospell
-
 functor
 import
 	Application
@@ -11,11 +9,9 @@ import
 	System
 define
 	% to make life easier...
-
 	Print = System.showInfo
 
-	% Pour ouvrir les fichiers
-
+	% For file opening
 	class TextFile
 		from Open.file Open.text
 	end
@@ -29,12 +25,9 @@ define
 	OutputText
 	Files
 	Ngrams
-	History
 	% === === == === ===
 
-	% binary tree operations
-	% TODO should we change the names of these record keys (features)? could this improve performance?
-
+	%% binary tree operations
 	fun {BTGet T K}
 		case T
 			of leaf then % if we've arrived at a leaf, key is not in tree
@@ -67,30 +60,31 @@ define
 		end
 	end
 
-	% normalize an input string
-	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them
 
+	% normalize an input string
+	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them. It also accepts numbers but not special character
 	fun {Sanitize String}
 		case String
 			of nil then 
 				nil
 			
 			[] H|T then
-		   		if H >= 97 andthen H =< 122 then 
+				if H >= 97 andthen H =< 122 then 
 					H|{Sanitize T} % minuscule
 
-		   		elseif H >= 65 andthen H =< 90 then 
+				elseif H >= 65 andthen H =< 90 then 
 					{Char.toLower H}|{Sanitize T} % majuscule
 
-		   		elseif H >= 48 andthen H =< 57 then 
+				elseif H >= 48 andthen H =< 57 then 
 					H|{Sanitize T} % chiffre
 
-		   		else 
+				else 
 					32|{Sanitize T} % autre
-		   		
+				
 				end
 		end
-	 end
+	end
+
 
 	fun {HighestProbAux Probs MaxCount MaxKey}
 		case Probs
@@ -121,9 +115,11 @@ define
 		end
 	end
 
+
 	fun {HighestProb Probs}
 		{HighestProbAux Probs 0 nil} % counts always be like: > 0
 	end
+
 
 	fun {KeysWithProbAux Probs Prob}
 		Appended
@@ -143,9 +139,11 @@ define
 		end
 	end
 
+
 	fun {KeysWithProb Probs Prob}
 		{KeysWithProbAux Probs Prob}
 	end
+
 
 	fun {BuildNgramKeyAux I N Tokens TokenCount}
 		if I == N then
@@ -155,11 +153,13 @@ define
 		end
 	end
 
+
 	fun {BuildNgramKey N Tokens TokenCount}
 		VirtualStringKey = {BuildNgramKeyAux 0 N Tokens TokenCount}
 	in
 		{VirtualString.toAtom VirtualStringKey}
 	end
+
 
 	fun {ProbsNgramAux N Tokens TokenCount}
 		Key = {BuildNgramKey N Tokens TokenCount}
@@ -168,12 +168,13 @@ define
 	in
 		if Probs \= nil then
 			Probs
-		elseif N == 1 then
-			nil % XXX Should we make this return the most common word in the whole dataset then?
+		elseif N == 2 then
+			nil 
 		else
 			{ProbsNgramAux N - 1 Tokens TokenCount}
 		end
 	end
+
 
 	fun {ProbsNgram N Prompt}
 		SanitizedPrompt = {Sanitize Prompt}
@@ -184,11 +185,13 @@ define
 		{ProbsNgramAux PossibleN Tokens TokenCount}
 	end
 
+
 	fun {PredictProbs Prompt}
 		MaxN = {List.length Ngrams}
 	in
 		{ProbsNgram MaxN Prompt}
 	end
+
 
 	fun {Predict Prompt}
 		Probs = {PredictProbs Prompt}
@@ -196,79 +199,106 @@ define
 		{HighestProb Probs}.1
 	end
 
+
+	fun {FindLastTwo L}
+		{FindLastTwoAux L.2 L.1}
+	end
+
+
+	fun {FindLastTwoAux Tail Previous}
+		case Tail
+			of nil then nil
+			[] H|T then
+				if T == nil then
+					[Previous H]
+				else
+					{FindLastTwoAux T H}
+				end
+		end
+	end 
+
+	% Function called when Predict is pressed. It shall return a specific format specified in the project statement
 	fun {Press}
-		In Out
+		In Out InToUse Return LastTwo
 		Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
 	in
 		{InputText get(1: In)}
-		Out = {VirtualString.toString In # " " # {Predict In}}
-		{OutputText set(1: {String.toAtom Out})}
-		{AddHistory In}
-		{RefreshHistory In}
-		{InputText set(1: Out)}
 
-		Probs = {PredictProbs In}
+		case In
+			of nil then
+				Return = [[nil] 0]
+			[] H|T then
+				Return = nil
+				if {List.length {String.tokens In & }} > 2 then
+					LastTwo = {FindLastTwo {String.tokens In & }}
+					InToUse = {VirtualString.toString LastTwo.1 # " " # LastTwo.2.1}
 
-		if Probs == nil then
-			[[nil] 0]
+				elseif {List.length {String.tokens In & }} == 1 then
+					Return = [[nil] 0]
+				else
+					InToUse = In
+				end
+		end
+
+		if Return \= nil then
+			Return
 		else
-			Highest = {HighestProb Probs}
+			Out = {VirtualString.toString In # " " # {Predict InToUse}}
+			{OutputText set(1: {String.toAtom Out})}
+			{Print In}
+			{Print InToUse} % Prints the original input & then the usable version of it
+			{Print "\n--------\n"}
 
-			MaxKey = Highest.1
-			MaxCount = Highest.2.1
+			Probs = {PredictProbs InToUse}
 
-			MaxKeys = {KeysWithProb Probs MaxCount}
+			if Probs == nil then
+				[[nil] 0]
+			else
+				Highest = {HighestProb Probs}
 
-			{Browse [MaxKeys MaxCount]}
-			[MaxKeys MaxCount]
+				MaxKey = Highest.1
+				MaxCount = Highest.2.1
+
+				MaxKeys = {KeysWithProb Probs MaxCount}
+
+				{Browse [MaxKeys MaxCount]}
+				[MaxKeys MaxCount]
+			end
 		end
 	end
 
-	proc {OnPress}
+
+	proc {OnPress} % proc to call Press from GUI
 		_ = {Press}
 	end
 
-	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
-	
+
+	% return the whole content of F
 	fun {GetFileContent F}
 		Content
 	in 
 		{F read(list: Content size: all)}
 		Content
 	end
-		
-	fun {GetFileLinesAux F Acc}
-		Tweet = {F getS($)}
-	in
-		if Tweet == false then
-			Acc
-		else
-			{GetFileLinesAux F Tweet | Acc}
-		end
-	end
 
-	fun {GetFileLines F}
-		{GetFileLinesAux F nil}
-	end
 
 	% send list of tokens to port
-
 	proc {SendTokens P Tokens}
 		case Tokens
-			of H | T then % TODO check if this is TCO-able in Oz
-				{Port.send P {String.toAtom H}} % TODO check if this is faster than simply working with strings
+			of H | T then 
+				{Port.send P {String.toAtom H}} % Atom uses less memory than Strings
 				{SendTokens P T}
 			[] nil then skip
 		end
 	end
 
-	% parse tweet into tokens
-	% XXX currently, this is just splitting by space - this should be a bit more involved
 
-	fun {RemoveNilAux Tokens Acc} % Tokens is a list of words "..."|"..."|nil|"..."|nil -> remove the nil (appart from the last one of course)
+	
+	fun {RemoveNilAux Tokens Acc} 
 		case Tokens 
 			of nil then Acc
 			[] H|T then
+
 				if H == nil then 
 					{RemoveNilAux T Acc} 
 					
@@ -282,17 +312,20 @@ define
 		end
 	end
 
+
+	% Tokens is a list of words "..."|"..."|nil|"..."|nil -> remove the nil (appart from the last one of course)		
 	fun {RemoveNil Tokens}
 		case Tokens 
 			of nil then nil 
 			[] H|T then 
 				if H == nil then
-					{RemoveNil T}
+					{RemoveNil T} % case if [nil nil ... "..."] 
 				else 
 					{RemoveNilAux Tokens.2 [Tokens.1]}
 				end
 		end
 	end
+
 
 	% Parse Tweets (whole content of a file)
 	proc {ParseTweets P Tweets}
@@ -302,20 +335,19 @@ define
 		{SendTokens P Tokens}
 	end
 
+
 	% read a given part file
 	% each file consists of a bunch of tweets, each on their own line
-
 	proc {ReadPart P Name}
 		F = {New TextFile init(name: Name flags: [read])}
 		Tweets = {GetFileContent F}
 	in
 		{F close}
 		{ParseTweets P Tweets}
-		{Print Name}
 	end
 
-	% read each file this thread is supposed to read in the Files list
 
+	% read each file this thread is supposed to read in the Files list
 	proc {ReadThread Files FileCount P N TotalN}
 		if N =< FileCount then
 			{ReadPart P {List.nth Files N}} % List.nth starts counting at 1
@@ -325,8 +357,8 @@ define
 		end
 	end
 
-	% run N threads for reading/parsing files
 
+	% run N threads for reading/parsing files
 	proc {LaunchProducerThreadsAux Files P N TotalN}
 		if N > 0 then
 			{LaunchProducerThreadsAux Files P N - 1 TotalN}
@@ -339,9 +371,9 @@ define
 		{LaunchProducerThreadsAux Files P N N}
 	end
 
+
 	% combine two frequency records together
 	% e.g. {CombineFreqs a(lorem: 4 ipsum: 3) b(dolor: 2 ipsum: 4)} -> c(lorem: 4 ipsum: 7 dolor: 2)
-
 	fun {CombineFreqs F1 F2}
 		Sums = {Record.zip F1 F2 fun {$ Count1 Count2}
 			Count1 + Count2
@@ -350,21 +382,19 @@ define
 		{Record.adjoin F2 {Record.adjoin F1 Sums}} % second record has priority over first one!
 	end
 
-	% combine two n-gram records together
-	% TODO can I optimize this by only adjoining on one side?
 
+	% combine two n-gram records together
 	fun {CombineNgrams N1 N2}
 		Sums = {Record.zip N1 N2 CombineFreqs}
 	in
 		{Record.adjoin N2 {Record.adjoin N1 Sums}} % second record has priority over first one!
 	end
 
+
 	% consume the tweet stream into an n-gram (ConsumeNgram)
 	% a stream basically acts as a big list
 	% go through all the words in that stream (ConsumeNgramAux)
 	% for each one of those words, process the next N words (ConsumeNgramFreqs)
-	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
-
 	fun {ConsumeNgramFreqs N S Key} % returns partial ngram record
 		case S
 			of Word | T then
@@ -383,6 +413,7 @@ define
 				end
 		end
 	end
+
 
 	fun {ConsumeNgram N S} % returns full ngram record
 		case S
@@ -421,8 +452,8 @@ define
 		end
 	end
 
-	% consume the tweet stream into multiple n-grams
 
+	% consume the tweet stream into multiple n-grams
 	fun {ConsumeNgramsAux N TotalN S}
 		if N > TotalN then
 			nil
@@ -435,59 +466,6 @@ define
 		{ConsumeNgramsAux 1 N S}
 	end
 
-	% Ajouter vos fonctions et procédures auxiliaires ici
-
-	proc {RefreshHistory NewH}
-		Current
-	in
-		{History get(
-					1: Current
-				)}
-
-		{History set(
-					1: {VirtualString.toString NewH # "\n" # Current}
-				)}
-	end
-
-	fun {GetHistory}
-		% line1\nline2...
-		F = {New TextFile init(name: 'history.txt' flags: [read])}
-		Content
-		NewContent
-	in
-		%% TODO: replace \n with \n + ... + \n
-		{F read(list: Content size: all)}
-		Content 
-	end
-
-	proc {AddHistory Input}
-		% Append to history Input|Output\n
-		F = {New TextFile init(name: 'history.txt' flags: [read write])}
-		WDesc
-	in
-		% XXX can't do this for the moment - cf. https://github.com/mozart/mozart2/pull/345
-		% {F seek(whence: 'end' offset: 0)}
-
-		{F getDesc(WDesc _)}
-		{OS.lSeek WDesc 'SEEK_END' 0 _}
-
-		{F putS(Input)}
-		{F close}
-	end
-
-	fun {GetHistoryLabel}
-		text(
-			handle: History
-			width: 20
-			foreground: white
-			background: c(52 53 65)
-			pady: 5
-			glue: nwe
-		)
-	end
-
-	% Fetch Tweets Folder from CLI Arguments
-	% See the Makefile for an example of how it is called
 
 	fun {GetSentenceFolder}
 		Args = {Application.getArgs record(
@@ -501,26 +479,18 @@ define
 		Args.'folder'
 	end
 
-	proc {ListAllFiles L}
-		case L of nil then skip
-		[] H|T then {Print {String.toAtom H}} {ListAllFiles T}
-		end
-	end
 
+	% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
 	fun {GetFiles Folder L} % L = {OS.getDir TweetsFolder}
-		% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
-
 		case L
 			of nil then nil
 			[] H|T then {VirtualString.toAtom Folder # "/" # H }|{GetFiles Folder T} % gives: 'tweets/fileX.txt'
 		end
 	end
 
-	% Useful function for later: {File GetS($)} -> gives the next line etc etc
 
+	% return true if strings are equal regardless of case
 	fun {Strcasecmp S1 S2}
-		% return true if strings are equal regardless of case
-
 		case S1
 			of nil then
 				if S2 == nil then
@@ -539,6 +509,8 @@ define
 		end
 	end
 
+
+	% Main function to launch all activities
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
 		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}}
@@ -552,214 +524,11 @@ define
 			% Creation de l'interface graphique
 
 			Description=td(
-				title: "GPT-OZ 4"
-				background: c(42 43 45)
-
-				lr(
-					background: c(42 43 45)
-
-					td(
-						background: c(42 43 45)
-						glue: nw
-						padx: 50
-						0: label(
-							text: "History"
-							foreground: white
-							glue: nwe
-							pady: 10
-							background: c(42 43 45)
-						)
-						1: {GetHistoryLabel}
-					)
-
-					td(
-						height: 300
-						width: 400
-						background: c(52 53 65)
-						padx: 10
-						% pady:30
-
-						label(
-							text: "GPT-OZ 4"
-							foreground: white
-							glue: nswe
-							pady: 10
-							background: c(52 53 65)
-						)
-
-						lr( % three columns
-							width: 300
-							height: 100
-							background: c(52 53 65)
-
-							td(
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								label(
-									text: "Examples"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Tesla is ...\nshareholders'\nvictory."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-
-								label(
-									text: "I am ...\nclose to\npoverty."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-
-								label(
-									text: "I should...\nresell Twitter."
-									foreground: white
-									background: c(64 65 79)
-									pady:5
-									glue: nwe
-								)
-							)
-
-							td(
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								label(
-									text: "Possibilities"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Get automatic\nTweets"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "N-Grams\nprediction\nbased"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-
-								label(
-									text: "Easy and\ncomplete\ntweets"
-									foreground: white
-									background: c(64 65 79)
-									pady: 5
-									glue: nwe
-								)
-							)
-
-							td(
-								glue:wns
-								background: c(52 53 65)
-								padx:10
-
-								1: label(
-									text: "Limitations"
-									foreground: white
-									background: c(52 53 65)
-									pady: 5
-									glue: nwe
-								)
-
-								2: label(
-									text: "Elon Musk\ntweetosphere"
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-
-								3: label(
-									text: "May produce \nweird \noutput "
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-
-								4: label(
-									text: "Declarative\nOz only "
-									foreground: white
-									background: c(64 65 79)
-									pady: 8
-									glue: nwe
-								)
-							)
-						)
-
-						text(
-							handle: OutputText
-							width: 100
-							height: 10
-							background: c(52 53 65)
-							highlightthickness:0
-							foreground: white
-							glue: nswe
-							wrap: word
-							borderwidth: 0
-						)
-
-						text(
-							glue: nswe
-							handle: InputText
-							width: 100
-							height: 5
-							background: c(64 65 79)
-							borderwidth: 2
-							foreground: white
-							wrap: word
-						)
-
-						button(
-							text: "PREDICT"
-							relief: groove
-							foreground: c(52 53 65)
-							background: white
-							width: 10
-							glue: s
-							action: proc {$}
-								{OnPress}
-							end
-						)
-
-						label(
-							text: "@GPT-OZ 4 is under MIT license & still in development.\nNo warranty of work is given and it should be used at your own risk."
-							foreground: white
-							glue: swe
-							pady: 20
-							background: c(52 53 65)
-						)
-					)
-				)
-
-				% quit program when window is closed
-
-				action: proc {$}
-					{Application.exit 0}
-				end
+				title: "Text predictor"
+				lr(text(handle:InputText width:50 height:10 background:white foreground:black wrap:word) button(text:"Predict" width:15 action: proc {$} {OnPress} end))
+				text(handle:OutputText width:50 height:10 background:black foreground:white glue:w wrap:word)
+				action:proc{$}{Application.exit 0} end % quitte le programme quand la fenetre est fermee
 			)
-
-			% window creation
 
 			Window = {QTk.build Description}
 			{Window show}
@@ -772,8 +541,6 @@ define
 					{OnPress}
 				end
 			)}
-
-			{History set(1: {GetHistory})}
 
 			% On lance les threads de lecture et de parsing
 
@@ -792,6 +559,8 @@ define
 				1: ""
 			)}
 		end
+
+		%%ENDOFCODE%%
 	end
 
 	% call main procedure
