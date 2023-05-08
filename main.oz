@@ -30,6 +30,41 @@ define
 	History
 	% === === == === ===
 
+	% binary tree operations
+	% TODO should we change the names of these record keys (features)? could this improve performance?
+
+	fun {BTGet T K}
+		case T
+			of leaf then % if we've arrived at a leaf, key is not in tree
+				nil
+			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
+				if MatchedK > K then % key is to the left
+					{BTGet MatchedLeft K}
+				elseif MatchedK < K then % key is to the right
+					{BTGet MatchedRight K}
+				else % MatchedK == K, found key
+					MatchedV
+				end
+			else nil
+		end
+	end
+
+	fun {BTSet T K V}
+		case T
+			of leaf then % if we've arrived at a leaf, create a new tree
+				tree(k: K v: V leaf leaf)
+			[] tree(k: MatchedK v: MatchedV MatchedLeft MatchedRight) then
+				if MatchedK > K then % insert k-v pair to the left
+					tree(k: MatchedK v: MatchedV {BTSet MatchedLeft K V} MatchedRight)
+				elseif MatchedK < K then % insert k-v pair to the right
+					tree(k: MatchedK v: MatchedV MatchedLeft {BTSet MatchedRight K V})
+				else % MatchedK == K, simply replace old value with new one
+					tree(k: K v: V MatchedLeft MatchedRight)
+				end
+			else T
+		end
+	end
+
 	% normalize an input string
 	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them
 
@@ -43,32 +78,59 @@ define
 		end}
 	end
 
-	fun {HighestProbAux Keys Probs MaxCount MaxKey}
-		Count
-		NewMaxCount
-		NewMaxKey
-	in
-		case Keys
-			of H | T then
-				Count = Probs.H
+	fun {HighestProbAux Probs MaxCount MaxKey}
+		case Probs
+			of leaf then % if we've arrived at a leaf, key is not in tree
+				[MaxKey MaxCount]
+			[] tree(k: Word v: Freq MatchedLeft MatchedRight) then
+				local
+					MaxLeft = {HighestProbAux MatchedLeft MaxCount MaxKey}
+					MaxRight = {HighestProbAux MatchedRight MaxCount MaxKey}
 
-				if Count > MaxCount then
-					NewMaxKey = H
-					NewMaxCount = Count
-				else
-					NewMaxKey = MaxKey
-					NewMaxCount = MaxCount
+					MaxKeyLeft = MaxLeft.1
+					MaxKeyRight = MaxRight.1
+
+					MaxCountLeft = MaxLeft.2.1
+					MaxCountRight = MaxRight.2.1
+				in
+					if MaxCountLeft > MaxCount andthen MaxCountLeft > MaxCountRight andthen MaxCountLeft > Freq then
+						[MaxKeyLeft MaxCountLeft]
+					elseif MaxCountRight > MaxCount andthen MaxCountRight > Freq then
+						[MaxKeyRight MaxCountRight]
+					elseif Freq > MaxCount then
+						[Word Freq]
+					else
+						[MaxKey MaxCount]
+					end
 				end
-
-				{HighestProbAux T Probs NewMaxCount NewMaxKey}
-
-			[] nil then
-				MaxKey
+			else [MaxKey MaxCount]
 		end
 	end
 
 	fun {HighestProb Probs}
-		{HighestProbAux {Record.arity Probs} Probs 0 nil}
+		{HighestProbAux Probs 0 nil} % counts always be like: > 0
+	end
+
+	fun {KeysWithProbAux Probs Prob}
+		Appended
+	in
+		case Probs
+			of leaf then % if we've arrived at a leaf, key is not in tree
+				nil
+			[] tree(k: Word v: Freq MatchedLeft MatchedRight) then
+				Appended = {List.append {KeysWithProbAux MatchedLeft Prob} {KeysWithProbAux MatchedRight Prob}}
+
+				if Freq == Prob then
+					Word | Appended
+				else
+					Appended
+				end
+			else nil
+		end
+	end
+
+	fun {KeysWithProb Probs Prob}
+		{KeysWithProbAux Probs Prob}
 	end
 
 	fun {BuildNgramKeyAux I N Tokens TokenCount}
@@ -88,9 +150,10 @@ define
 	fun {ProbsNgramAux N Tokens TokenCount}
 		Key = {BuildNgramKey N Tokens TokenCount}
 		Ngram = {List.nth Ngrams N}
+		Probs = {BTGet Ngram Key}
 	in
-		if {Value.hasFeature Ngram Key} then
-			Ngram.Key
+		if Probs \= nil then
+			Probs
 		elseif N == 1 then
 			nil % XXX Should we make this return the most common word in the whole dataset then?
 		else
@@ -116,33 +179,12 @@ define
 	fun {Predict Prompt}
 		Probs = {PredictProbs Prompt}
 	in
-		{HighestProb Probs}
+		{HighestProb Probs}.1
 	end
-
-	% /!\ Fonction testee /!\
-	% @pre: les threads sont "ready"
-	% @post: Fonction appellee lorsqu on appuie sur le bouton de prediction
-	%		  Affiche la prediction la plus probable du prochain mot selon les deux derniers mots entres
-	% @return: Retourne une liste contenant la liste du/des mot(s) le(s) plus probable(s) accompagnee de
-	%			 la probabilite/frequence la plus elevée.
-	%			 La valeur de retour doit prendre la forme:
-	%
-	%% <return_val>            := <most_probable_words> '|' <probability/frequence> '|' nil
-	%% <most_probable_words>   := <atom> '|' <most_probable_words>
-	%						| nil
-	% 						| <no_word_found>
-	%% <no_word_found>         := nil '|' nil
-
-	%% <probability/frequence> := <int> | <float>
-
-	%% Example:
-	%% * [[cool swag nice] 0.7]
-	%% * [[cool swag nice] 7]
-	%% * [[nil] 0]               # should return [nil] in case of no most probable word found
 
 	fun {Press}
 		In Out
-		Probs MaxKey MaxCount Entries MaxEntries MaxKeys
+		Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
 	in
 		{InputText get(1: In)}
 		Out = {VirtualString.toString In # " " # {Predict In}}
@@ -157,24 +199,14 @@ define
 		if Probs == nil then
 			[[nil] 0]
 		else
-			MaxKey = {HighestProb Probs}
+			Highest = {HighestProb Probs}
 
-			if {Value.hasFeature Probs MaxKey} then
-				MaxCount = Probs.MaxKey
-			else
-				MaxCount = 0
-			end
+			MaxKey = Highest.1
+			MaxCount = Highest.2.1
 
-			Entries = {Dictionary.entries {Record.toDictionary Probs}}
+			MaxKeys = {KeysWithProb Probs MaxCount}
 
-			MaxEntries = {List.filter Entries fun {$ Entry}
-				Entry.2 == MaxCount
-			end}
-
-			MaxKeys = {List.map MaxEntries fun {$ Entry}
-				Entry.1
-			end}
-
+			{Browse [MaxKeys MaxCount]}
 			[MaxKeys MaxCount]
 		end
 	end
@@ -183,8 +215,15 @@ define
 		_ = {Press}
 	end
 
-
-	% return a list of the tweets within a file (without '\n'): tweet_n | tweet_n-1 | ... | nil
+	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
+	
+	fun {GetFileContent F}
+		Content
+	in 
+		{F read(list: Content size: all)}
+		Content
+	end
+		
 	fun {GetFileLinesAux F Acc}
 		Tweet = {F getS($)}
 	in
@@ -200,8 +239,8 @@ define
 		{GetFileLinesAux F nil}
 	end
 
-
 	% send list of tokens to port
+
 	proc {SendTokens P Tokens}
 		case Tokens
 			of H | T then % TODO check if this is TCO-able in Oz
@@ -219,13 +258,15 @@ define
 			[] H|T then
 
 				if H == nil then 
-					{RemoveNilAux T Acc}
+					{RemoveNilAux T Acc} 
+					
 				elseif H == "amp" then
 					{RemoveNilAux T Acc}
-				else 
-					{RemoveNilAux T {Append Acc [H]}}
-				end
 
+				else
+					{RemoveNilAux T {Append Acc [H]}}
+					
+				end
 		end
 	end
 
@@ -242,22 +283,12 @@ define
 		end
 	end
 
-	proc {ParseTweet P Tweet}
-		SanitizedTweet = {Sanitize Tweet}
+	% Parse Tweets (whole content of a file)
+	proc {ParseTweets P Tweets}
+		SanitizedTweet = {Sanitize Tweets}
 		Tokens = {RemoveNil {String.tokens SanitizedTweet & }} 
 	in
 		{SendTokens P Tokens}
-	end
-
-	% go through a list of tweets and parse them
-
-	proc {ParseTweets P Tweets}
-		case Tweets
-			of H | T then % TODO check if this is TCO-able in Oz
-				{ParseTweet P H}
-				{ParseTweets P T}
-			[] nil then skip
-		end
 	end
 
 	% read a given part file
@@ -265,7 +296,7 @@ define
 
 	proc {ReadPart P Name}
 		F = {New TextFile init(name: Name flags: [read])}
-		Tweets = {GetFileLines F}
+		Tweets = {GetFileContent F}
 	in
 		{F close}
 		{ParseTweets P Tweets}
@@ -330,15 +361,14 @@ define
 						local
 							KeyAtom = {VirtualString.toAtom Key}
 						in
-							ngram(KeyAtom: freqs(Word: 1))
+							[KeyAtom Word]
 						end
 					else
 						{ConsumeNgramFreqs N - 1 T Key # Word # " "}
 					end
 				else
-					ngram()
+					[nil nil]
 				end
-			else nil
 		end
 	end
 
@@ -348,14 +378,34 @@ define
 				if Word \= thistokenshouldneverappearinthetweets then
 					local
 						Cur = {ConsumeNgram N T}
-						Ngram = {ConsumeNgramFreqs N T ""}
+						Ngram = {ConsumeNgramFreqs N S ""}
+						Key = Ngram.1
+						Word = Ngram.2.1
+						PrevFreqBT = {BTGet Cur Key}
 					in
-						{CombineNgrams Cur Ngram}
+						if Key \= nil then
+							if PrevFreqBT == nil then % key hasn't yet appeared, create a new frequency BT
+								{BTSet Cur Key tree(k: Word v: 1 leaf leaf)}
+							else % key has already appeared, add to previous frequency BT
+								local
+									PrevFreq = {BTGet PrevFreqBT Word}
+									FreqBT
+								in
+									if PrevFreq == nil then % word hasn't yet appeared in frequency BT, start at 1
+										FreqBT = {BTSet PrevFreqBT Word 1}
+									else
+										FreqBT = {BTSet PrevFreqBT Word PrevFreq + 1}
+									end
+									{BTSet Cur Key FreqBT}
+								end
+							end
+						else
+							Cur
+						end
 					end
 				else
-					ngram()
+					leaf
 				end
-			else nil
 		end
 	end
 
@@ -439,7 +489,6 @@ define
 		Args.'folder'
 	end
 
-	% Decomnentez moi si besoin
 	proc {ListAllFiles L}
 		case L of nil then skip
 		[] H|T then {Print {String.toAtom H}} {ListAllFiles T}
@@ -448,6 +497,7 @@ define
 
 	fun {GetFiles Folder L} % L = {OS.getDir TweetsFolder}
 		% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
+
 		case L
 			of nil then nil
 			[] H|T then {VirtualString.toAtom Folder # "/" # H }|{GetFiles Folder T} % gives: 'tweets/fileX.txt'
@@ -477,10 +527,9 @@ define
 		end
 	end
 
-	% Procedure principale qui cree la fenetre et appelle les differentes procedures et fonctions
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
-		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
+		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}}
 	in
 
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
