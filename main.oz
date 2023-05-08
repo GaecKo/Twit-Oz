@@ -9,11 +9,9 @@ import
 	System
 define
 	% to make life easier...
-
 	Print = System.showInfo
 
-	% Pour ouvrir les fichiers
-
+	% For file opening
 	class TextFile
 		from Open.file Open.text
 	end
@@ -29,8 +27,7 @@ define
 	Ngrams
 	% === === == === ===
 
-	% binary tree operations
-	% TODO should we change the names of these record keys (features)? could this improve performance?
+	%% binary tree operations
 	fun {BTGet T K}
 		case T
 			of leaf then % if we've arrived at a leaf, key is not in tree
@@ -63,9 +60,9 @@ define
 		end
 	end
 
-	% normalize an input string
-	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them
 
+	% normalize an input string
+	% this consists of replacing all non-alphanumerical characters by spaces and lowercasing them. It also accepts numbers but not special character
 	fun {Sanitize String}
 		case String
 			of nil then 
@@ -87,6 +84,7 @@ define
 				end
 		end
 	end
+
 
 	fun {HighestProbAux Probs MaxCount MaxKey}
 		case Probs
@@ -117,9 +115,11 @@ define
 		end
 	end
 
+
 	fun {HighestProb Probs}
 		{HighestProbAux Probs 0 nil} % counts always be like: > 0
 	end
+
 
 	fun {KeysWithProbAux Probs Prob}
 		Appended
@@ -139,9 +139,11 @@ define
 		end
 	end
 
+
 	fun {KeysWithProb Probs Prob}
 		{KeysWithProbAux Probs Prob}
 	end
+
 
 	fun {BuildNgramKeyAux I N Tokens TokenCount}
 		if I == N then
@@ -151,11 +153,13 @@ define
 		end
 	end
 
+
 	fun {BuildNgramKey N Tokens TokenCount}
 		VirtualStringKey = {BuildNgramKeyAux 0 N Tokens TokenCount}
 	in
 		{VirtualString.toAtom VirtualStringKey}
 	end
+
 
 	fun {ProbsNgramAux N Tokens TokenCount}
 		Key = {BuildNgramKey N Tokens TokenCount}
@@ -165,11 +169,12 @@ define
 		if Probs \= nil then
 			Probs
 		elseif N == 2 then
-			nil % XXX Should we make this return the most common word in the whole dataset then?
+			nil 
 		else
 			{ProbsNgramAux N - 1 Tokens TokenCount}
 		end
 	end
+
 
 	fun {ProbsNgram N Prompt}
 		SanitizedPrompt = {Sanitize Prompt}
@@ -180,11 +185,13 @@ define
 		{ProbsNgramAux PossibleN Tokens TokenCount}
 	end
 
+
 	fun {PredictProbs Prompt}
 		MaxN = {List.length Ngrams}
 	in
 		{ProbsNgram MaxN Prompt}
 	end
+
 
 	fun {Predict Prompt}
 		Probs = {PredictProbs Prompt}
@@ -192,9 +199,11 @@ define
 		{HighestProb Probs}.1
 	end
 
+
 	fun {FindLastTwo L}
 		{FindLastTwoAux L.2 L.1}
 	end
+
 
 	fun {FindLastTwoAux Tail Previous}
 		case Tail
@@ -208,6 +217,7 @@ define
 		end
 	end 
 
+	% Function called when Predict is pressed. It shall return a specific format specified in the project statement
 	fun {Press}
 		In Out InToUse Return LastTwo
 		Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
@@ -235,8 +245,9 @@ define
 		else
 			Out = {VirtualString.toString In # " " # {Predict InToUse}}
 			{OutputText set(1: {String.toAtom Out})}
-			{Print InToUse}
-			% return
+			{Print In}
+			{Print InToUse} % Prints the original input & then the usable version of it
+			{Print "\n--------\n"}
 
 			Probs = {PredictProbs InToUse}
 
@@ -256,48 +267,34 @@ define
 		end
 	end
 
+
 	proc {OnPress} % proc to call Press from GUI
 		_ = {Press}
 	end
 
-	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
-	
+
+	% return the whole content of F
 	fun {GetFileContent F}
 		Content
 	in 
 		{F read(list: Content size: all)}
 		Content
 	end
-		
-	fun {GetFileLinesAux F Acc}
-		Tweet = {F getS($)}
-	in
-		if Tweet == false then
-			Acc
-		else
-			{GetFileLinesAux F Tweet | Acc}
-		end
-	end
 
-
-	fun {GetFileLines F}
-		{GetFileLinesAux F nil}
-	end
 
 	% send list of tokens to port
-
 	proc {SendTokens P Tokens}
 		case Tokens
-			of H | T then % TODO check if this is TCO-able in Oz
+			of H | T then 
 				{Port.send P {String.toAtom H}} % Atom uses less memory than Strings
 				{SendTokens P T}
 			[] nil then skip
 		end
 	end
 
-	% parse tweet into tokens
 
-	fun {RemoveNilAux Tokens Acc} % Tokens is a list of words "..."|"..."|nil|"..."|nil -> remove the nil (appart from the last one of course)
+	
+	fun {RemoveNilAux Tokens Acc} 
 		case Tokens 
 			of nil then Acc
 			[] H|T then
@@ -316,6 +313,7 @@ define
 	end
 
 
+	% Tokens is a list of words "..."|"..."|nil|"..."|nil -> remove the nil (appart from the last one of course)		
 	fun {RemoveNil Tokens}
 		case Tokens 
 			of nil then nil 
@@ -328,6 +326,7 @@ define
 		end
 	end
 
+
 	% Parse Tweets (whole content of a file)
 	proc {ParseTweets P Tweets}
 		SanitizedTweet = {Sanitize Tweets}
@@ -336,9 +335,9 @@ define
 		{SendTokens P Tokens}
 	end
 
+
 	% read a given part file
 	% each file consists of a bunch of tweets, each on their own line
-
 	proc {ReadPart P Name}
 		F = {New TextFile init(name: Name flags: [read])}
 		Tweets = {GetFileContent F}
@@ -347,8 +346,8 @@ define
 		{ParseTweets P Tweets}
 	end
 
-	% read each file this thread is supposed to read in the Files list
 
+	% read each file this thread is supposed to read in the Files list
 	proc {ReadThread Files FileCount P N TotalN}
 		if N =< FileCount then
 			{ReadPart P {List.nth Files N}} % List.nth starts counting at 1
@@ -358,8 +357,8 @@ define
 		end
 	end
 
-	% run N threads for reading/parsing files
 
+	% run N threads for reading/parsing files
 	proc {LaunchProducerThreadsAux Files P N TotalN}
 		if N > 0 then
 			{LaunchProducerThreadsAux Files P N - 1 TotalN}
@@ -372,9 +371,9 @@ define
 		{LaunchProducerThreadsAux Files P N N}
 	end
 
+
 	% combine two frequency records together
 	% e.g. {CombineFreqs a(lorem: 4 ipsum: 3) b(dolor: 2 ipsum: 4)} -> c(lorem: 4 ipsum: 7 dolor: 2)
-
 	fun {CombineFreqs F1 F2}
 		Sums = {Record.zip F1 F2 fun {$ Count1 Count2}
 			Count1 + Count2
@@ -383,21 +382,19 @@ define
 		{Record.adjoin F2 {Record.adjoin F1 Sums}} % second record has priority over first one!
 	end
 
-	% combine two n-gram records together
-	% TODO can I optimize this by only adjoining on one side?
 
+	% combine two n-gram records together
 	fun {CombineNgrams N1 N2}
 		Sums = {Record.zip N1 N2 CombineFreqs}
 	in
 		{Record.adjoin N2 {Record.adjoin N1 Sums}} % second record has priority over first one!
 	end
 
+
 	% consume the tweet stream into an n-gram (ConsumeNgram)
 	% a stream basically acts as a big list
 	% go through all the words in that stream (ConsumeNgramAux)
 	% for each one of those words, process the next N words (ConsumeNgramFreqs)
-	% TODO thistokenshouldneverappearinthetweets -> nil? Should we even atomize words if we already atomize keys?
-
 	fun {ConsumeNgramFreqs N S Key} % returns partial ngram record
 		case S
 			of Word | T then
@@ -416,6 +413,7 @@ define
 				end
 		end
 	end
+
 
 	fun {ConsumeNgram N S} % returns full ngram record
 		case S
@@ -454,8 +452,8 @@ define
 		end
 	end
 
-	% consume the tweet stream into multiple n-grams
 
+	% consume the tweet stream into multiple n-grams
 	fun {ConsumeNgramsAux N TotalN S}
 		if N > TotalN then
 			nil
@@ -467,6 +465,7 @@ define
 	fun {ConsumeNgrams N S}
 		{ConsumeNgramsAux 1 N S}
 	end
+
 
 	fun {GetSentenceFolder}
 		Args = {Application.getArgs record(
@@ -480,26 +479,18 @@ define
 		Args.'folder'
 	end
 
-	proc {ListAllFiles L}
-		case L of nil then skip
-		[] H|T then {Print {String.toAtom H}} {ListAllFiles T}
-		end
-	end
 
+	% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
 	fun {GetFiles Folder L} % L = {OS.getDir TweetsFolder}
-		% Returns a list of the path to all files in tweets/: part_1.txt|...|nil
-
 		case L
 			of nil then nil
 			[] H|T then {VirtualString.toAtom Folder # "/" # H }|{GetFiles Folder T} % gives: 'tweets/fileX.txt'
 		end
 	end
 
-	% Useful function for later: {File GetS($)} -> gives the next line etc etc
 
+	% return true if strings are equal regardless of case
 	fun {Strcasecmp S1 S2}
-		% return true if strings are equal regardless of case
-
 		case S1
 			of nil then
 				if S2 == nil then
@@ -518,6 +509,8 @@ define
 		end
 	end
 
+
+	% Main function to launch all activities
 	proc {Main}
 		TweetsFolder = {GetSentenceFolder}
 		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}}
