@@ -1,5 +1,3 @@
-% vim: nospell
-
 functor
 import
 	Application
@@ -63,6 +61,7 @@ define
 				end
 
 				{HighestProbAux T Probs NewMaxCount NewMaxKey}
+
 			[] nil then
 				MaxKey
 		end
@@ -148,9 +147,10 @@ define
 		{InputText get(1: In)}
 		Out = {VirtualString.toString In # " " # {Predict In}}
 		{OutputText set(1: {String.toAtom Out})}
-		{AddHistory In}
+		{InputText set(1: Out)} % set Input to Output so quicker for next prediction
+
+		{AddHistory In} % History management
 		{RefreshHistory In}
-		{InputText set(1: Out)}
 
 		Probs = {PredictProbs In}
 
@@ -179,12 +179,12 @@ define
 		end
 	end
 
-	proc {OnPress}
+	proc {OnPress} % proc to call Press from GUI
 		_ = {Press}
 	end
 
-	% return a list of the tweets within a file (without '\n'): tweet_N | tweet_N-1 | ... | nil
 
+	% return a list of the tweets within a file (without '\n'): tweet_n | tweet_n-1 | ... | nil
 	fun {GetFileLinesAux F Acc}
 		Tweet = {F getS($)}
 	in
@@ -195,44 +195,47 @@ define
 		end
 	end
 
+
 	fun {GetFileLines F}
 		{GetFileLinesAux F nil}
 	end
 
-	% send list of tokens to port
 
+	% send list of tokens to port
 	proc {SendTokens P Tokens}
 		case Tokens
 			of H | T then % TODO check if this is TCO-able in Oz
-				{Port.send P {String.toAtom H}} % TODO check if this is faster than simply working with strings
+				{Port.send P {String.toAtom H}} % Atom uses less memory than Strings
 				{SendTokens P T}
 			[] nil then skip
 		end
 	end
 
 	% parse tweet into tokens
-	% XXX currently, this is just splitting by space - this should be a bit more involved
 
 	fun {RemoveNilAux Tokens Acc} % Tokens is a list of words "..."|"..."|nil|"..."|nil -> remove the nil (appart from the last one of course)
 		case Tokens 
 			of nil then Acc
 			[] H|T then
+
 				if H == nil then 
 					{RemoveNilAux T Acc}
-					
+				elseif H == "amp" then
+					{RemoveNilAux T Acc}
 				else 
 					{RemoveNilAux T {Append Acc [H]}}
-					
 				end
+
 		end
 	end
+
 
 	fun {RemoveNil Tokens}
 		case Tokens 
 			of nil then nil 
 			[] H|T then 
 				if H == nil then
-					{RemoveNil T}
+					{RemoveNil T} % case if [nil nil ... "..."] 
 				else 
 					{RemoveNilAux Tokens.2 [Tokens.1]}
 				end
@@ -266,7 +269,6 @@ define
 	in
 		{F close}
 		{ParseTweets P Tweets}
-		{Print Name}
 	end
 
 	% read each file this thread is supposed to read in the Files list
@@ -480,12 +482,6 @@ define
 		TweetsFolder = {GetSentenceFolder}
 		Files = {GetFiles TweetsFolder {OS.getDir TweetsFolder}} % Files = 'tweets/part1.txt' '|' ... '|' nil
 	in
-		% Fonction d'exemple qui liste tous les fichiers
-		% contenus dans le dossier passe en Argument.
-		% Inspirez vous en pour lire le contenu des fichiers
-		% se trouvant dans le dossier
-		% N'appelez PAS cette fonction lors de la phase de
-		% soumission !!!
 
 		local NbThreads Description Window SeparatedWordsStream SeparatedWordsPort in
 			{Property.put print foo(
@@ -493,10 +489,7 @@ define
 				depth: 1000
 			)}
 
-			% TODO
-
-			% Creation de l'interface graphique
-
+			% GUI:
 			Description=td(
 				title: "GPT-OZ 4"
 				background: c(42 43 45)
@@ -523,7 +516,6 @@ define
 						width: 400
 						background: c(52 53 65)
 						padx: 10
-						% pady:30
 
 						label(
 							text: "GPT-OZ 4"
@@ -538,7 +530,7 @@ define
 							height: 100
 							background: c(52 53 65)
 
-							td(
+							td( % EXAMPLES COLUMN
 								glue:wns
 								background: c(52 53 65)
 								padx:10
@@ -576,7 +568,7 @@ define
 								)
 							)
 
-							td(
+							td( % POSSIBILITIES COLUMN
 								glue:wns
 								background: c(52 53 65)
 								padx:10
@@ -614,7 +606,7 @@ define
 								)
 							)
 
-							td(
+							td( % LIMITATIONS COLUMN
 								glue:wns
 								background: c(52 53 65)
 								padx:10
