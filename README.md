@@ -24,7 +24,14 @@ make run
 
 ## Screenshots
 
-TODO ;)
+![Example of Use](.git_files/uses.gif)
+
+## Extensions
+We implementend some more functionnalities to our project:
+- We improved the original GUI (made using the Mozart 2 library `QTk`).
+- We added an History system which stores the **inputs**
+- We use multiple **BT** to compute the next word (one for each n-gram from 1 to 5 words)
+
 
 ## Authors
 

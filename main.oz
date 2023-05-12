@@ -193,36 +193,47 @@ define
 
 
 	% Function launched when Predict clicked
-	fun {Press}
+	fun {Press Acc}
 		In Out
 		Probs Highest MaxKey MaxCount Entries MaxEntries MaxKeys
 	in
 		{InputText get(1: In)}
-		Out = {VirtualString.toString In # " " # {Predict In}}
-		{OutputText set(1: {String.toAtom Out})}
-		{AddHistory In}
-		{RefreshHistory In}
-		{InputText set(1: Out)}
+		if Acc == 10 then
+			{AddHistory In}
+			{RefreshHistory In}
+		end
 
-		Probs = {PredictProbs In}
+		if Acc \= 0 then 
+			Out = {VirtualString.toString In # " " # {Predict In}}
+			{OutputText set(1: {String.toAtom Out})}
+			
+			{InputText set(1: Out)}
 
-		if Probs == nil then
-			[[nil] 0]
-		else
-			Highest = {HighestProb Probs}
+			% As it's not for submission anymore, let's make it more interactive / GPT like
 
-			MaxKey = Highest.1
-			MaxCount = Highest.2.1
+			% Probs = {PredictProbs In}
 
-			MaxKeys = {KeysWithProb Probs MaxCount}
+			% if Probs == nil then
+			% 	[[nil] 0]
+			% else
+			% 	Highest = {HighestProb Probs}
 
-			{Browse [MaxKeys MaxCount]}
-			[MaxKeys MaxCount]
+			% 	MaxKey = Highest.1
+			% 	MaxCount = Highest.2.1
+
+			% 	MaxKeys = {KeysWithProb Probs MaxCount}
+
+			% 	% [MaxKeys MaxCount]
+			{Delay 500}
+			{Press Acc-1}
+			
+		else 
+			0
 		end
 	end
 
 	proc {OnPress}
-		_ = {Press}
+		_ = {Press 10}
 	end
 
 
